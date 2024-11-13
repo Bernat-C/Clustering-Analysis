@@ -1,4 +1,4 @@
-from preprocessing import preprocess_vehicle
+from preprocessing import preprocess_vehicle, preprocess_sick, preprocess_grid
 
 def preprocess_datasets():
     #df_sick = preprocess_sick()
