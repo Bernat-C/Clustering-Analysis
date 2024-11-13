@@ -3,8 +3,11 @@ import pandas as pd
 
 from utils import drop_rows, drop_columns, min_max_scaler, one_hot_encoding, binary_encoding, fill_nans
 
-
 def preprocess_sick():
+    """
+    Applies the specified preprocessings for the dataset sick and stores it in the file datasets_processed/sick.csv.
+    :return: dataframe
+    """
     for fold in range(10):
         # Load arff files
         df_sick, meta_train = loadarff(f'datasets/sick.arff')
@@ -39,25 +42,40 @@ def preprocess_sick():
         df_sick.to_csv(f'datasets_processed/sick.csv', index=False)
 
 def preprocess_grid():
-    for fold in range(10):
-        # Load arff files
-        df_grid, meta_train = loadarff(f'datasets/grid.arff')
+    """
+    Applies the specified preprocessings for the dataset grid and stores it in the file datasets_processed/grid.csv.
+    :return: dataframe
+    """
 
-        # Define datasets
-        df_grid = pd.DataFrame(df_grid)
+    df_grid, meta_train = loadarff(f'datasets/grid.arff')
 
-        df_grid = binary_encoding(df_grid)
-        df_grid = min_max_scaler(df_grid, ['x','y'])
+    # Define datasets
+    df_grid = pd.DataFrame(df_grid)
 
-        df_grid.to_csv(f'datasets_processed/grid.csv', index=False)
+    df_grid = binary_encoding(df_grid)
+    df_grid = min_max_scaler(df_grid, ['x','y'])
+
+    df_grid.to_csv(f'datasets_processed/grid.csv', index=False)
+
+    return df_grid.iloc[:,:-1], df_grid.iloc[:,-1]
 
 def preprocess_vehicle():
-        df_vehicle, meta_train = loadarff(f'datasets/vehicle.arff')
+    """
+    Applies the specified preprocessings for the dataset vehicle and stores it in the file datasets_processed/vehicle.csv.
+    :return: dataframe
+    """
+    df_vehicle, meta_train = loadarff(f'datasets/vehicle.arff')
 
-        df_vehicle = pd.DataFrame(df_vehicle)
+    df_vehicle = pd.DataFrame(df_vehicle)
 
-        # Do min-max scaling, binary encoding and whatever
+    # Move the class to the end to not encode it.
+    df_vehicle = df_vehicle[[col for col in df_vehicle if col != 'Class'] + ['Class']]
+    num_cols = df_vehicle.select_dtypes(include=['number']).columns.tolist()
 
-        df_vehicle.to_csv(f'datasets_processed/vehicle.csv', index=False)
+    df_vehicle = min_max_scaler(df_vehicle, num_cols) # Only non-numerical column is the last one.
+
+    df_vehicle.to_csv(f'datasets_processed/vehicle.csv', index=False)
+
+    return df_vehicle.iloc[:,:-1], df_vehicle.iloc[:,-1]
 
 

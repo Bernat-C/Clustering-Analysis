@@ -26,9 +26,9 @@ def min_max_scaler(df, numerical_cols=slice(None)):
     scaler = MinMaxScaler()
 
     # Scaler Training with all the train and test information.
-    scaler.fit_transform(df[numerical_cols])
+    df[numerical_cols] = scaler.fit_transform(df[numerical_cols])
 
-    return df_train, df_test
+    return df
 
 def one_hot_encoding(df):
     categorical_features = df.select_dtypes(include=['object']).nunique()[lambda x: x > 2].index.tolist()
