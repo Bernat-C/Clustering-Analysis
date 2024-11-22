@@ -3,7 +3,7 @@ import time
 from sklearn.cluster import KMeans
 import numpy as np
 
-
+from kmeans import CustomKMeans
 class I_Kmeans_minus_plus:
 
     def __init__(self, data, k, init='k-means++'):
@@ -20,9 +20,6 @@ class I_Kmeans_minus_plus:
         if self.init == 'useful':
             self.S.useful_init()
             kmeans = CustomKMeans(n_clusters=self.k, init=self.S.centroids)
-            kmeans = kmeans.fit(self.data)
-        else:
-            kmeans = CustomKMeans(n_clusters=self.k)
             kmeans.fit(self.data)
         start_time = time.time()
         cluster_assignment = kmeans.predict(self.data)
@@ -378,63 +375,6 @@ class t_k_means:
             _ = S.update_first_second_nearest_center(AP, aux)
 
         return S
-    
-import numpy as np
-
-class CustomKMeans:
-    def __init__(self, n_clusters, init=None, max_iters=100, tolerance=1e-4):
-
-        self.n_clusters = n_clusters
-        self.init = init
-        self.max_iters = max_iters
-        self.tolerance = tolerance
-        self.centroids = None
-
-    def fit(self, data):
-
-        n_samples, n_features = data.shape
-
-        # Initialize centroids
-        if self.init is not None:
-            self.centroids = np.array(self.init)
-        else:
-            np.random.seed(42)
-            random_indices = np.random.choice(n_samples, self.n_clusters, replace=False)
-            self.centroids = data[random_indices]
-
-        for iteration in range(self.max_iters):
-            # Assignment step: Compute distances and assign points to the nearest cluster
-            distances = self.euclidean_distance(data, self.centroids)
-            cluster_ids = np.argmin(distances, axis=1)
-
-            # Update step: Compute new centers as the mean of points assigned to each cluster
-            new_centroids = np.array([
-                data[cluster_ids == i].mean(axis=0) if np.any(cluster_ids == i) else self.centroids[i]
-                for i in range(self.n_clusters)
-            ])
-
-            # Check for convergence
-            center_shift = np.sum(np.linalg.norm(new_centroids - self.centroids, axis=1))
-            if center_shift < self.tolerance:
-                break
-
-            self.centroids = new_centroids
-
-        # Store final cluster assignments and distances
-        self.cluster_ids_ = cluster_ids
-        self.distances_ = distances
-
-    def predict(self, data):
-        distances = self.euclidean_distance(data, self.centroids)
-        cluster_ids = np.argmin(distances, axis=1)
-        return cluster_ids
-
-    def transform(self, data):
-        return self.euclidean_distance(data, self.centroids)
-    
-    def euclidean_distance(self, X, centers):
-        distances = np.linalg.norm(X[:, np.newaxis] - centers, axis=2)
-        return distances
 
     
 import pandas as pd
@@ -442,6 +382,6 @@ import pandas as pd
 df = pd.read_csv('datasets_processed/grid.csv')
 df_X = np.array(df[df.columns[:-1]])
 df_y = np.array(df[df.columns[-1]])
-I_kmeans = I_Kmeans_minus_plus(df_X, 3)
+I_kmeans = I_Kmeans_minus_plus(df_X, 3, init='useful')
 print(I_kmeans.fit())
 
