@@ -50,7 +50,7 @@ def compute_final_clusters(data, centers, membership_matrix, n_clusters):
 
     return clusters
 
-def gs_fcm(data, n_clusters, m=2, max_iter=100, tolerance=1e-5):
+def fcm(data, n_clusters, m=2, max_iter=100, tolerance=1e-5):
 
     n_samples, n_features = data.shape
 
