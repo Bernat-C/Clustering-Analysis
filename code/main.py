@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 
-from preprocessing import preprocess_vehicle, preprocess_sick, preprocess_grid
+from preprocessing import preprocess_vowel, preprocess_sick, preprocess_grid
 from utils import get_user_choice, plot_clusters
 from fuzzyclustering import gs_fcm
 from spectralclustering import spectral_clustering
@@ -9,7 +9,7 @@ from spectralclustering import spectral_clustering
 def preprocess_datasets():
     df_sick_X, df_sick_y = preprocess_sick()
     df_grid_X, df_grid_y = preprocess_grid()
-    df_vehicle_X, df_vehicle_y = preprocess_vehicle()
+    df_vowel_X, df_vowel_y = preprocess_vowel()
 
 def load_ds(name):
 
@@ -23,9 +23,7 @@ def load_ds(name):
 def main():
     print("Welcome to our Clustering application.")
 
-    dataset = get_user_choice("Please, select the dataset you would like to use:", ["sick", "grid","vehicle"])
-    if dataset == "sick": ###### TODO: TREURE QUAN ES PUGUI
-        raise EnvironmentError('The dataset "SICK" is not implemented because we are waiting for the answer from the teacher.')
+    dataset = get_user_choice("Please, select the dataset you would like to use:", ["sick", "grid","vowel"])
     method = get_user_choice("Please, select the algorithm to use:", ["OPTICS", "Spectral Clustering", "K-Means", "Fuzzy Clustering"])
 
     dataset = load_ds(dataset)

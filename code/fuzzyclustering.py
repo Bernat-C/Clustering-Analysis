@@ -7,11 +7,11 @@ def update_centers(data, member_matrix, m):
     n_clusters = member_matrix.shape[0]
     n_features = data.shape[1]
 
-    centers = np.zeros((n_clusters, n_features))
+    centers = np.zeros((n_clusters, n_features)) # N clusters centers, and N features will describe each center.
 
     for i in range(n_clusters):
-        um = member_matrix[i, :] ** m  # Raise membership values to the power of m
-        centers[i] = np.dot(um, data) / np.sum(um)  # Compute new center as weighted average
+        member_center_m = member_matrix[i, :] ** m  # Raise membership values to the power of m
+        centers[i] = np.dot(member_center_m, data) / np.sum(member_center_m)  # vi = sum_k(u^m*x) / sum_k(u^m)
 
     return centers
 
@@ -23,23 +23,23 @@ def update_membership_matrix(data, centers, m):
     n_clusters = centers.shape[0]
 
     # Compute the distance between each data point and each center
-    dist = np.zeros((n_clusters, n_samples))
+    dist = np.zeros((n_clusters, n_samples)) # N clusters, and each cluster will have a probability for each sample
+
     for i in range(n_clusters):
-        dist[i, :] = np.linalg.norm(data - centers[i], axis=1)
+        dist[i, :] = np.linalg.norm(data - centers[i], axis=1) # Axis = 1 as we are performing the norm between the samples and the cluster center
 
     # Compute the inverse distance raised to the power of (m-1)
     dist = np.maximum(dist, 1e-10)  # Avoid division by zero
-    inv_dist = 1.0 / dist
-    inv_dist_m = inv_dist ** (m - 1)
+    dist_m = dist ** (-2 / (m - 1))
 
     # Normalize to get membership matrix
-    membership_matrix = inv_dist_m / np.sum(inv_dist_m, axis=0)
+    membership_matrix = dist_m / np.sum(dist_m, axis=0) # Axis = 0 as we are normalizing across clusters
 
     return membership_matrix
 
 def compute_final_clusters(data, centers, membership_matrix, n_clusters):
     """
-    Compute the final fuzzy clusters based on the membership matrix and centers.
+    Compute the final clusters (not fuzzy anymore) based on the membership matrix and centers.
     """
     clusters = {i: {'points': [], 'center': centers[i]} for i in range(n_clusters)}
 
@@ -70,7 +70,7 @@ def gs_fcm(data, n_clusters, m=2, max_iter=100, tolerance=1e-5):
         member_matrix = update_membership_matrix(data, centers, m)
 
         # Check for convergence (if centers do not change significantly)
-        if np.linalg.norm(centers - prev_centers) < tolerance:
+        if np.sum(np.linalg.norm(centers - prev_centers, axis=1)) < tolerance: # Check if the sum of individual norms changes significantly
             break
 
         prev_centers = centers.copy()
