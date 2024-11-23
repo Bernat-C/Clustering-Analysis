@@ -1,70 +1,67 @@
-import time
-
-from sklearn.cluster import KMeans
 import numpy as np
 
 from kmeans import CustomKMeans
+
 class I_Kmeans_minus_plus:
 
-    def __init__(self, data, k, init='k-means++'):
+
+    def __init__(self, k):
         self.k = k
+        self.data = None
+        self.init = Useful_init(k)
+        self.tkmeans = tk_means(k)
+
+    def fit(self, data):
+        
         self.data = data
-        self.tkmeans = t_k_means(self.data, self.k)
-        self.S = Proposal(data, k)
-        if not init in ['k-means++', 'useful', 'random']:
-            raise Exception("Initialization is not supported, supported initializations are: k-means++, useful, random")
-        self.init = init
+        self.nearest_centers = np.zeros(shape=self.data.shape[0], dtype=int)
+        self.second_nearest_centers = np.zeros(shape=self.data.shape[0], dtype=int)
+        self.distance_to_center = np.zeros(shape=(self.k, self.data.shape[0]))
+        self.distance_inter_center = np.zeros(shape=(self.k, self.k))
 
-    def fit(self):
-        # Instruction 1
-        if self.init == 'useful':
-            self.S.useful_init()
-            kmeans = CustomKMeans(n_clusters=self.k, init=self.S.centroids)
-            kmeans.fit(self.data)
-        start_time = time.time()
-        cluster_assignment = kmeans.predict(self.data)
-        distances = kmeans.transform(self.data)
-        self.S.update_proposal(kmeans.centroids, cluster_assignment, distances)
-
-        # instruction 2
-        n_success = 0
         indivisible_clusters = []
-        unmatchable_pairs = []  # list of pairs (s1,s2)
+        unmatchable_pairs = []
         irremovable_clusters = []
+
+        # Instruction N.1
+        self.centroids, self.distance_to_center, self.distance_inter_center = self.init.obtain_centroids(data)
+        kmeans = CustomKMeans(n_clusters=self.k, init=self.centroids)
+        kmeans.fit(self.data)
+        self.nearest_centers = kmeans.predict(data)
+        self.distance_to_center = kmeans.transform(self.data).T
+        self.centroids = kmeans.centroids
+
+        # Instruction N.2
+        success = 0
+
         while True:
-            start1 = time.time()
             # instruction 3
             if len(indivisible_clusters) == self.k:
                 break
-            Si, gain_Si = self.S.get_max_gain(indivisible_clusters)
+            Si, gain_Si = self.get_max_gain(indivisible_clusters)
             # Instruction 4
-            if self.S.k2_better_gain(indivisible_clusters, gain_Si):
+            if self.k2_better_gain(indivisible_clusters, gain_Si):
                 break
             # Instruction 5
-            posible_Sjs = self.S.check_conditions(Si, gain_Si, unmatchable_pairs, irremovable_clusters)
+            posible_Sjs = self.check_conditions(Si, gain_Si, unmatchable_pairs, irremovable_clusters)
             if len(posible_Sjs) == 0:
                 break
-            j, cost_Sj = self.S.get_min_cost(posible_Sjs)
+            j, cost_Sj = self.get_min_cost(posible_Sjs)
             Sj = posible_Sjs[j]
             # Instruction 6
-            if self.S.k2_better_cost(posible_Sjs, cost_Sj):
+            if self.k2_better_cost(posible_Sjs, cost_Sj):
                 indivisible_clusters.append(Si)
                 continue
             # Instruction 7
-            newCentroid = self.S.get_random_centroid(Si)
-            end1 = time.time()
-            start2 = time.time()
+            newCentroid = self.get_random_centroid(Si)
+
             # new solution
-            S_ = Proposal(self.data, self.k, self.S.centroids, self.S.nearest_centers, self.S.second_nearest_centers)
-            S_ = self.tkmeans.fit(S_, newCentroid, Si, Sj)
-            S_.recompute_distances()
+            self.tkmeans.fit(self.data, self.centroids, self.distance_to_center, self.nearest_centers, self.second_nearest_centers, newCentroid, Si, Sj)
+            self.tkmeans.recompute_distances()
+
             # Instruction 8
-            S_res = self.S.total_SSEDM()
-            newS_res = S_.total_SSEDM()
-            end2 = time.time()
-            # print(Si, Sj)
-            # print('prev: ' + str("{:e}".format(S_res)), 'new: ' + str("{:e}".format(newS_res)))
-            # print('time1 :' + str(end1 - start1), 'time2 :' + str(end2 - start2))
+            S_res = self.total_SSEDM()
+            newS_res = self.tkmeans.total_SSEDM()
             if newS_res >= S_res:
                 unmatchable_pairs.append((Si, Sj))
             else:
@@ -72,148 +69,28 @@ class I_Kmeans_minus_plus:
                 irremovable_clusters.append(Sj)
                 prev_strong_adj = self.S.get_strong_adjacents(Sj)
                 indivisible_clusters += prev_strong_adj
-                self.S = S_
+                
+                self.centroids = self.tkmeans.centroids
+                self.distance_to_center = self.tkmeans.distance_to_center
+                self.nearest_centers = self.tkmeans.nearest_centers
+                self.second_nearest_centers = self.tkmeans.second_nearest_centers
+
                 curr_strong_adj = list(set(self.S.get_strong_adjacents(Si) + self.S.get_strong_adjacents(Sj)))
                 indivisible_clusters += curr_strong_adj
-                n_success += 1
-                # print('succes!!!!!!!!')
-            if n_success > self.k / 2:
+                success += 1
+
+            if success > self.k / 2:
                 break
-        end_time = time.time()
-        return self.S.centroids, self.S.total_SSEDM(), self.S.max_SSEDM(), (end_time - start_time)
-
-    def predict(self, X):
-        centroid_idxs = []
-        for x in X:
-            dists = np.linalg.norm(x - self.S.centroids)
-            centroid_idx = np.argmin(dists)
-            centroid_idxs.append(centroid_idx)
-        return centroid_idxs
-
-import numpy as np
-
-class Proposal:
-
-    def __init__(self, data, k, centers=None, nc=None, snc=None):
-        self.data = data
-        self.k = k
-        if centers is None:
-            self.centroids = []
-        else:
-            self.centroids = centers.copy()
-        if nc is None:
-            self.nearest_centers = np.zeros(shape=self.data.shape[0], dtype=int)
-        else:
-            self.nearest_centers = nc.copy()
-        if snc is None:
-            self.second_nearest_centers = np.zeros(shape=self.data.shape[0], dtype=int)
-        else:
-            self.second_nearest_centers = snc.copy()
-
-        self.distance_to_center = np.zeros(shape=(self.k, self.data.shape[0]))
-        self.distance_inter_center = np.zeros(shape=(self.k, self.k))
-
-    ##########################################################
-    ##                 CUSTOM INITIALIZATION                ##
-    ##########################################################
-
-    def _useful_nearest_centers(self, P_id, c, last_UNC):
-        if len(self.centroids) <= 1:
-            return self.centroids
-        else:
-            useless = set()
-            for cx in last_UNC:
-                cx_id = self.centroids.index(cx)
-                c_id = self.centroids.index(c)
-
-                if cx != c and P_id != c and P_id != cx:
-
-                    if self.distance_inter_center[c_id, cx_id] == 0:
-                        Ccx_dist = np.linalg.norm(self.data[c, :] - self.data[cx, :])
-                        self.distance_inter_center[cx_id, c_id] = Ccx_dist
-                        self.distance_inter_center[c_id, cx_id] = Ccx_dist
-
-                    if not (c in useless) and (
-                            self.distance_to_center[cx_id, P_id] < self.distance_to_center[c_id, P_id]) and (
-                            self.distance_inter_center[c_id, cx_id] < self.distance_to_center[c_id, P_id]):
-                        # last center is useless
-                        return last_UNC
-
-            # last center is not useless
-            for cx in last_UNC:
-                cx_id = self.centroids.index(cx)
-                c_id = self.centroids.index(c)
-
-                if cx != c and P_id != c and P_id != cx:
-
-                    if self.distance_inter_center[c_id, cx_id] == 0:
-                        Ccx_dist = np.linalg.norm(self.data[c, :] - self.data[cx, :])
-                        self.distance_inter_center[cx_id, c_id] = Ccx_dist
-                        self.distance_inter_center[c_id, cx_id] = Ccx_dist
-
-                    if not (cx in useless) and (
-                            self.distance_to_center[c_id, P_id] < self.distance_to_center[cx_id, P_id]) and (
-                            self.distance_inter_center[c_id, cx_id] < self.distance_to_center[cx_id, P_id]):
-                        # cx is useless
-                        useless.add(cx)
-
-            useful = [center for center in last_UNC if not center in useless]
-            if not c in useful:
-                useful.append(c)
-
-            return useful
-
-    def _UNC_value(self, P_id, UNC):
-        sum, lnsum, max = 0, 0, None
-        for c in UNC:
-            if (P_id != c):
-                c_id = self.centroids.index(c)
-                eucl = self.distance_to_center[c_id, P_id]  # DISTANCIA
-                if max is None or max < eucl:
-                    max = eucl
-                sum += eucl
-                lnsum += np.log(eucl)
-        if (max is None): return 0
-        avg = sum / len(UNC)
-        return (avg / max) * lnsum
-
-    def _compute_distances(self, center):
-        return np.linalg.norm(self.data - center, axis=1)
-
-    def useful_init(self):
-        self.centroids.append(self.data[:, 0].argmin())
-        UNCs = [[None] for _ in range(self.data.shape[0])]
-        while len(self.centroids) < self.k:
-            max, best_id, last_center = None, None, self.centroids[-1]
-            if self.distance_to_center[len(self.centroids) - 1, 1] == 0 and self.distance_to_center[
-                len(self.centroids) - 1, 2] == 0:
-                self.distance_to_center[len(self.centroids) - 1, :] = self._compute_distances(self.data[last_center, :])
-            for id, p in enumerate(self.data):
-                if not id in self.centroids:
-                    UNCs[id] = self._useful_nearest_centers(id, last_center, UNCs[id])
-                    evaluation = self._UNC_value(id, UNCs[id])
-                    if max == None or max < evaluation:
-                        max = evaluation
-                        best_id = id
-            self.centroids.append(best_id)
-        self.centroids = self.data[self.centroids, :]
-
-    ##########################################################
-    ##        UPDATE SOLUTION WITH KMEANS RESULTS           ##
-    ##########################################################
-
-    def _second_nearest_centers(self, transformed_data):
-        sorted_distances = np.argsort(transformed_data, axis=1)
-        self.second_nearest_centers = [sorted_distances[i, 1] for i in range(self.second_nearest_centers.shape[0])]
-
-    def update_proposal(self, centers, nc, distances):
-        self.centroids = centers
-        self.nearest_centers = nc
-        self.distance_to_center = distances.T
-
-    ##########################################################
-    ##                      K-Means-+                       ##
-    ##########################################################
+    
+    def euclidean_distance(self, X, centers):
+        distances = np.linalg.norm(X[:, np.newaxis] - centers, axis=2)
+        return distances
+    
+    def predict(self, data):
+        distances = self.euclidean_distance(data, self.centroids)
+        cluster_ids = np.argmin(distances, axis=1)
+        return cluster_ids
+    
 
     def _SSEDM(self, cluster_ids, centroid_id):
         return np.sum(np.square(self.distance_to_center[centroid_id, cluster_ids]))
@@ -289,9 +166,134 @@ class Proposal:
                 sadj.append(c)
         return sadj
 
-    ##########################################################
-    ##                tolerant-K-Means                      ##
-    ##########################################################
+
+class Useful_init:
+
+    def __init__(self, k):
+        self.k = k
+        self.data = None
+
+    def obtain_centroids(self, data):
+        self.data = data
+        self.centroids = [self.data[:, 0].argmin()]
+
+        self.distance_to_center = np.zeros(shape=(self.k, self.data.shape[0]))
+        self.distance_inter_center = np.zeros(shape=(self.k, self.k))
+
+        UNCs = [[None] for _ in range(self.data.shape[0])]
+        while len(self.centroids) < self.k:
+            max, best_id, last_center = None, None, self.centroids[-1]
+            if self.distance_to_center[len(self.centroids) - 1, 1] == 0 and self.distance_to_center[
+                len(self.centroids) - 1, 2] == 0:
+                self.distance_to_center[len(self.centroids) - 1, :] = self._compute_distances(self.data[last_center, :])
+            for id, p in enumerate(self.data):
+                if not id in self.centroids:
+                    UNCs[id] = self._useful_nearest_centers(id, last_center, UNCs[id])
+                    evaluation = self._UNC_value(id, UNCs[id])
+                    if max == None or max < evaluation:
+                        max = evaluation
+                        best_id = id
+            self.centroids.append(best_id)
+        self.centroids = self.data[self.centroids, :]
+
+        return self.centroids, self.distance_to_center, self.distance_inter_center
+
+
+    def _useful_nearest_centers(self, P_id, c, last_UNC):
+        if len(self.centroids) <= 1:
+            return self.centroids
+        else:
+            useless = set()
+            for cx in last_UNC:
+                cx_id = self.centroids.index(cx)
+                c_id = self.centroids.index(c)
+
+                if cx != c and P_id != c and P_id != cx:
+
+                    if self.distance_inter_center[c_id, cx_id] == 0:
+                        Ccx_dist = np.linalg.norm(self.data[c, :] - self.data[cx, :])
+                        self.distance_inter_center[cx_id, c_id] = Ccx_dist
+                        self.distance_inter_center[c_id, cx_id] = Ccx_dist
+
+                    if not (c in useless) and (
+                            self.distance_to_center[cx_id, P_id] < self.distance_to_center[c_id, P_id]) and (
+                            self.distance_inter_center[c_id, cx_id] < self.distance_to_center[c_id, P_id]):
+                        # last center is useless
+                        return last_UNC
+
+            # last center is not useless
+            for cx in last_UNC:
+                cx_id = self.centroids.index(cx)
+                c_id = self.centroids.index(c)
+
+                if cx != c and P_id != c and P_id != cx:
+
+                    if self.distance_inter_center[c_id, cx_id] == 0:
+                        Ccx_dist = np.linalg.norm(self.data[c, :] - self.data[cx, :])
+                        self.distance_inter_center[cx_id, c_id] = Ccx_dist
+                        self.distance_inter_center[c_id, cx_id] = Ccx_dist
+
+                    if not (cx in useless) and (
+                            self.distance_to_center[c_id, P_id] < self.distance_to_center[cx_id, P_id]) and (
+                            self.distance_inter_center[c_id, cx_id] < self.distance_to_center[cx_id, P_id]):
+                        # cx is useless
+                        useless.add(cx)
+
+            useful = [center for center in last_UNC if not center in useless]
+            if not c in useful:
+                useful.append(c)
+
+            return useful
+
+    def _UNC_value(self, P_id, UNC):
+        sum, lnsum, max = 0, 0, None
+        for c in UNC:
+            if (P_id != c):
+                c_id = self.centroids.index(c)
+                eucl = self.distance_to_center[c_id, P_id]  # DISTANCIA
+                if max is None or max < eucl:
+                    max = eucl
+                sum += eucl
+                lnsum += np.log(eucl)
+        if (max is None): return 0
+        avg = sum / len(UNC)
+        return (avg / max) * lnsum
+
+    def _compute_distances(self, center):
+        return np.linalg.norm(self.data - center, axis=1)
+    
+class tk_means:
+    def __init__(self, k):
+        self.k = k
+
+    def fit(self, data, centroids, distance_to_center, nearest_centers, second_nearest_centers, newCj, Ci, Cj):
+
+        self.data = data.copy()
+        self.centroids = centroids.copy()
+        self.distance_to_center = distance_to_center.copy()
+        self.nearest_centers = nearest_centers.copy()
+        self.second_nearest_centers = second_nearest_centers.copy()
+        
+        AC = set([Ci, Cj])
+        Ac_adj = set()
+        AP = []
+        self.update_centroid(Cj, newCj)
+
+        while len(AC) != 0:
+            potencial_AC = set()
+            Ac_adj = self.get_adjacent_centers(AC)
+            AP = self.get_affected_points(AC)
+            aux = list(AC | Ac_adj)
+            pot = self.update_first_second_nearest_center(AP, aux)
+            potencial_AC = potencial_AC | pot
+            self.update_centers(aux)
+            AC = potencial_AC
+            _ = self.update_first_second_nearest_center(AP, aux)
+
+    def _is_adjacent(self, cluster_id1, cluster_id2):
+        p_cluster2 = np.where(self.nearest_centers == cluster_id2)[0]
+        second_nearest_cluster = self.second_nearest_centers[p_cluster2]
+        return np.any(second_nearest_cluster == cluster_id1)
 
     def get_adjacent_centers(self, centers):
         adj = set()
@@ -339,49 +341,8 @@ class Proposal:
         for id, c in enumerate(self.centroids):
             self.distance_to_center[id, :] = np.linalg.norm(self.data - c, axis=1)
 
-    ##########################################################
-    ##                      Results                         ##
-    ##########################################################
-
-    def results(self):
-        return self.total_SSEDM(), self.max_SSEDM()
-
-
-
-
-class t_k_means:
-
-    def __init__(self, data, k):
-        self.data = data
-        self.k = k
-
-    def fit(self, S: Proposal, newCj, Ci, Cj):
-        AC = set([Ci, Cj])
-        Ac_adj = set()
-        AP = []
-        # Ac_adj += S.get_adjacent_centers([Cj])
-        # AP += S.get_affected_points([Cj]).tolist()
-        S.update_centroid(Cj, newCj)
-
-        while len(AC) != 0:
-            potencial_AC = set()
-            Ac_adj = S.get_adjacent_centers(AC)
-            AP = S.get_affected_points(AC)
-            aux = list(AC | Ac_adj)
-            pot = S.update_first_second_nearest_center(AP, aux)
-            potencial_AC = potencial_AC | pot
-            S.update_centers(aux)
-            AC = potencial_AC
-            _ = S.update_first_second_nearest_center(AP, aux)
-
-        return S
-
+    def _SSEDM(self, cluster_ids, centroid_id):
+        return np.sum(np.square(self.distance_to_center[centroid_id, cluster_ids]))
     
-import pandas as pd
-
-df = pd.read_csv('datasets_processed/grid.csv')
-df_X = np.array(df[df.columns[:-1]])
-df_y = np.array(df[df.columns[-1]])
-I_kmeans = I_Kmeans_minus_plus(df_X, 3, init='useful')
-print(I_kmeans.fit())
-
+    def total_SSEDM(self):
+        return np.sum([self._SSEDM(np.where(self.nearest_centers == i)[0], i) for i in range(self.k)])

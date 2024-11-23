@@ -1,13 +1,19 @@
 import numpy as np
 
 class CustomKMeans:
-    def __init__(self, n_clusters, init=None, max_iters=100, tolerance=1e-4):
+    def __init__(self, n_clusters, init=None, distance='euclidean', max_iters=100, tolerance=1e-4):
 
         self.n_clusters = n_clusters
         self.init = init
         self.max_iters = max_iters
         self.tolerance = tolerance
         self.centroids = None
+        if distance == 'euclidean':
+            self.distance = self.euclidean_distance
+        elif distance == 'manhattan':
+            self.distance = self.manhattan_distance
+        elif distance == 'cosine':
+            self.distance = self.cosine_distance
 
     def fit(self, data):
 
@@ -44,13 +50,23 @@ class CustomKMeans:
         self.distances_ = distances
 
     def predict(self, data):
-        distances = self.euclidean_distance(data, self.centroids)
+        distances = self.distance(data, self.centroids)
         cluster_ids = np.argmin(distances, axis=1)
         return cluster_ids
 
     def transform(self, data):
-        return self.euclidean_distance(data, self.centroids)
+        return self.distance(data, self.centroids)
     
     def euclidean_distance(self, X, centers):
         distances = np.linalg.norm(X[:, np.newaxis] - centers, axis=2)
         return distances
+
+    def manhattan_distance(self, X, centers):
+        distances = np.sum(np.abs(X[:, np.newaxis] - centers), axis=2)
+        return distances
+
+    def cosine_distance(self, X, centers):
+        norm_X = np.linalg.norm(X, axis=1)[:, np.newaxis]
+        norm_centers = np.linalg.norm(centers, axis=1)
+        similarity = np.dot(X, centers.T) / (norm_X * norm_centers)  # Cosine similarity
+        return 1 - similarity  # Return 1 - cosine similarity for clustering
