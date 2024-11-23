@@ -24,11 +24,11 @@ class I_Kmeans_minus_plus:
         irremovable_clusters = []
 
         # Instruction N.1
-        self.centroids = self.init.obtain_centroids(data)
+        self.centroids, self.distance_to_center, self.distance_inter_center = self.init.obtain_centroids(data)
         kmeans = CustomKMeans(n_clusters=self.k, init=self.centroids)
         kmeans.fit(self.data)
         self.nearest_centers = kmeans.predict(data)
-        self.distances_to_center = kmeans.transform(self.data)
+        self.distance_to_center = kmeans.transform(self.data).T
         self.centroids = kmeans.centroids
 
         # Instruction N.2
@@ -56,12 +56,12 @@ class I_Kmeans_minus_plus:
             newCentroid = self.get_random_centroid(Si)
 
             # new solution
-            tkmeans = self.tkmeans.fit(self.data, self.centroids, self.distance_to_center, self.nearest_centers, self.second_nearest_centers, newCentroid, Si, Sj)
-            tkmeans.recompute_distances()
+            self.tkmeans.fit(self.data, self.centroids, self.distance_to_center, self.nearest_centers, self.second_nearest_centers, newCentroid, Si, Sj)
+            self.tkmeans.recompute_distances()
 
             # Instruction 8
             S_res = self.total_SSEDM()
-            newS_res = tkmeans.total_SSEDM()
+            newS_res = self.tkmeans.total_SSEDM()
             if newS_res >= S_res:
                 unmatchable_pairs.append((Si, Sj))
             else:
@@ -70,10 +70,10 @@ class I_Kmeans_minus_plus:
                 prev_strong_adj = self.S.get_strong_adjacents(Sj)
                 indivisible_clusters += prev_strong_adj
                 
-                self.centroids = tkmeans.centroids
-                self.distance_to_center = tkmeans.distance_to_center
-                self.nearest_centers = tkmeans.nearest_centers
-                self.second_nearest_centers = tkmeans.second_nearest_centers
+                self.centroids = self.tkmeans.centroids
+                self.distance_to_center = self.tkmeans.distance_to_center
+                self.nearest_centers = self.tkmeans.nearest_centers
+                self.second_nearest_centers = self.tkmeans.second_nearest_centers
 
                 curr_strong_adj = list(set(self.S.get_strong_adjacents(Si) + self.S.get_strong_adjacents(Sj)))
                 indivisible_clusters += curr_strong_adj
@@ -189,7 +189,7 @@ class Useful_init:
             self.centroids.append(best_id)
         self.centroids = self.data[self.centroids, :]
 
-        return self.centroids
+        return self.centroids, self.distance_to_center, self.distance_inter_center
 
 
     def _useful_nearest_centers(self, P_id, c, last_UNC):
@@ -261,11 +261,11 @@ class tk_means:
 
     def fit(self, data, centroids, distance_to_center, nearest_centers, second_nearest_centers, newCj, Ci, Cj):
 
-        self.data = data
-        self.centroids = centroids
-        self.distance_to_center = distance_to_center
-        self.nearest_centers = nearest_centers
-        self.second_nearest_centers = second_nearest_centers
+        self.data = data.copy()
+        self.centroids = centroids.copy()
+        self.distance_to_center = distance_to_center.copy()
+        self.nearest_centers = nearest_centers.copy()
+        self.second_nearest_centers = second_nearest_centers.copy()
         
         AC = set([Ci, Cj])
         Ac_adj = set()
@@ -334,6 +334,11 @@ class tk_means:
         for id, c in enumerate(self.centroids):
             self.distance_to_center[id, :] = np.linalg.norm(self.data - c, axis=1)
 
+    def _SSEDM(self, cluster_ids, centroid_id):
+        return np.sum(np.square(self.distance_to_center[centroid_id, cluster_ids]))
+    
+    def total_SSEDM(self):
+        return np.sum([self._SSEDM(np.where(self.nearest_centers == i)[0], i) for i in range(self.k)])
 
 import pandas as pd
 
