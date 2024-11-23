@@ -50,9 +50,41 @@ def compute_final_clusters(data, centers, membership_matrix, n_clusters):
 
     return clusters
 
-def fcm(data, n_clusters, m=2, max_iter=100, tolerance=1e-5):
+def suppress_membership_matrix(membership_matrix, alpha=0.5):
+    """
+    Perform the suppression step of the suppressed fuzzy c-means (s-FCM) algorithm.
 
-    n_samples, n_features = data.shape
+    Parameters:
+    - member_matrix: current membership matrix (n_clusters x n_samples).
+    - alpha: suppression factor (0-1, default 0.5).
+    """
+    n_clusters, n_samples = membership_matrix.shape
+
+    suppressed_u = np.zeros_like(membership_matrix)
+
+    # Perform suppression on membership values
+    for k in range(n_samples):  # Iterate through samples
+        max_idx = np.argmax(membership_matrix[:,k])  # Find the cluster with the max membership
+        for i in range(n_clusters):
+            if i == max_idx:
+                suppressed_u[i,k] = 1 - alpha + alpha * membership_matrix[i,k]  # Apply suppression to all memberships
+            else:
+                suppressed_u[i,k] = alpha * membership_matrix[i,k]  # Adjust the max membership
+    return suppressed_u
+
+def s_fcm(data, n_clusters, m=2, max_iter=1000, tolerance=1e-5, suppress=False, alpha=0.5):
+    """
+    :param data: Samples x features
+    :param n_clusters: Number of clusters
+    :param m: Fuzzification parameter
+    :param max_iter: Maximum number of iterations run without convergence
+    :param tolerance: Tolerance for convergence
+    :param suppress: Perform suppression or not
+    :param alpha: Suppression paramter (0-1, default 0.5)
+    :return:
+    """
+
+    n_samples = data.shape[0]
 
     # Randomly initialize membership matrix
     member_matrix = np.random.rand(n_clusters, n_samples)
@@ -63,14 +95,19 @@ def fcm(data, n_clusters, m=2, max_iter=100, tolerance=1e-5):
 
     # Optimization loop
     for iter in range(max_iter):
-        # Update centers based on membership matrix
-        centers = update_centers(data, member_matrix, m)
-
         # Update membership matrix based on new centers
         member_matrix = update_membership_matrix(data, centers, m)
 
+        # Perform suppression if indicated
+        if suppress:
+            member_matrix = suppress_membership_matrix(member_matrix, alpha=alpha)
+
+        # Update centers based on membership matrix
+        centers = update_centers(data, member_matrix, m)
+
         # Check for convergence (if centers do not change significantly)
-        if np.sum(np.linalg.norm(centers - prev_centers, axis=1)) < tolerance: # Check if the sum of individual norms changes significantly
+        if np.sum(np.linalg.norm(centers - prev_centers, axis=0)) < tolerance: # Check if the sum of individual norms for each cluster changes significantly
+            print(f"Congence after {iter} iterations.")
             break
 
         prev_centers = centers.copy()
