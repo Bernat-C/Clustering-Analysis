@@ -50,13 +50,30 @@ def compute_final_clusters(data, centers, membership_matrix, n_clusters):
 
     return clusters
 
-def suppress_membership_matrix(membership_matrix, alpha=0.5):
+## GENERALIZATION
+
+def update_alpha_theta(u_w, m, eta=0.5):
     """
-    Perform the suppression step of the suppressed fuzzy c-means (s-FCM) algorithm.
+    Returns the updated value for alpha according to the first generalized suppression rule presented in the paper.
+
+    Parameters:
+    - u_w (float): The largest membership value for the sample.
+    - m (float): Fuzziness parameter (m > 1).
+    - eta (float): Suppression parameter (0 < eta < 1).
+    """
+    alpha_k = 1 / (1 - u_w + u_w * (1 - eta) ** (2 / (1 - m)))
+
+    return alpha_k
+
+## SUPPRESSION
+
+def suppress_membership_matrix(membership_matrix, alpha, m, generalized=False, eta=0.5):
+    """
+    Perform the suppression step of the suppressed fuzzy c-means (s-FCM) algorithm. If generalized = True, it also includes alpha updating according to generalized suppressed.
 
     Parameters:
     - member_matrix: current membership matrix (n_clusters x n_samples).
-    - alpha: suppression factor (0-1, default 0.5).
+    - alpha: suppression factor (0-1). If generalized=True it is ignored.
     """
     n_clusters, n_samples = membership_matrix.shape
 
@@ -64,23 +81,40 @@ def suppress_membership_matrix(membership_matrix, alpha=0.5):
 
     # Perform suppression on membership values
     for k in range(n_samples):  # Iterate through samples
-        max_idx = np.argmax(membership_matrix[:,k])  # Find the cluster with the max membership
+        winner_idx = np.argmax(membership_matrix[:,k])  # Find the cluster with the max membership (winner cluster)
+        if generalized:
+            u_w = membership_matrix[winner_idx, k]
+            alpha = update_alpha_theta(u_w, m, eta)
         for i in range(n_clusters):
-            if i == max_idx:
+            if i == winner_idx:
                 suppressed_u[i,k] = 1 - alpha + alpha * membership_matrix[i,k]  # Apply suppression to all memberships
             else:
                 suppressed_u[i,k] = alpha * membership_matrix[i,k]  # Adjust the max membership
+
+    # Normalize to get membership matrix
+    suppressed_u = suppressed_u / np.sum(suppressed_u, axis=0)  # Axis = 0 as we are normalizing across clusters
+
+
     return suppressed_u
 
-def s_fcm(data, n_clusters, m=2, max_iter=1000, tolerance=1e-5, suppress=False, alpha=0.5):
+def gs_fcm(data, n_clusters, m=2, max_iter=1000, tolerance=1e-5, suppress=False, alpha=0.5, generalized=False, eta=0.5):
     """
+    Performs the generalized suppressed fuzzy c-means gs_fcm as explained in Szilágyi, L., Szilágyi, S.M.: Generalization rules for the suppressed fuzzy c-means clustering
+    algorithm. Neurocomput. 139, 298–309 (2014). The generalization corresponds to the first one presented in the paper, where eta = theta.
+    If suppressed is False, it performs the typical Fuzzy C-Means algorithm.
+    If suppressed is True and Generalized is False it performs the Suppressed Fuzzy C-Means algorithm.
+    If both suppressed and Generalized are True, it performs the Generalized Suppressed Fuzzy C-Means algorithm.
+
+    Parameters:
     :param data: Samples x features
     :param n_clusters: Number of clusters
-    :param m: Fuzzification parameter
+    :param m: Fuzzification parameter (m>1)
     :param max_iter: Maximum number of iterations run without convergence
     :param tolerance: Tolerance for convergence
     :param suppress: Perform suppression or not
-    :param alpha: Suppression paramter (0-1, default 0.5)
+    :param alpha: Suppression parameter (0-1, default 0.5)
+    :param generalized: Perform generalized suppression or not. If suppress=False this parameter is ignored. If this parameter is set to true, the value for alpha is ignored as it is iteratively calculated using the generalization parameter eta.
+    :param eta: Generalization parameter
     :return:
     """
 
@@ -98,16 +132,16 @@ def s_fcm(data, n_clusters, m=2, max_iter=1000, tolerance=1e-5, suppress=False, 
         # Update membership matrix based on new centers
         member_matrix = update_membership_matrix(data, centers, m)
 
-        # Perform suppression if indicated
+        # Perform suppression if necessary
         if suppress:
-            member_matrix = suppress_membership_matrix(member_matrix, alpha=alpha)
+            member_matrix = suppress_membership_matrix(member_matrix, alpha, m, generalized, eta)
 
         # Update centers based on membership matrix
         centers = update_centers(data, member_matrix, m)
 
         # Check for convergence (if centers do not change significantly)
         if np.sum(np.linalg.norm(centers - prev_centers, axis=0)) < tolerance: # Check if the sum of individual norms for each cluster changes significantly
-            print(f"Congence after {iter} iterations.")
+            print(f"Convergence after {iter} iterations.")
             break
 
         prev_centers = centers.copy()
