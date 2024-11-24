@@ -17,7 +17,7 @@ def load_ds(name):
     file = os.path.join(base_dir,f'{name}.csv')
     df = pd.read_csv(file)
 
-    ## TODO: DE MOMENT NO UTILITZEM LA CLASSE, VAN DIR Q EN UN FUTUR IGUAL SI
+    # We remove the class of the dataset as we will not be using it
     return df.iloc[:,:-1]
 
 def main():
