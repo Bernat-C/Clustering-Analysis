@@ -25,7 +25,7 @@ def f_measure(labels_true, labels_pred):
     recall = contingency_matrix.max(axis=1).sum() / len(labels_true)
     return 2 * (precision * recall) / (precision + recall)
 
-def get_metrics(results, X, labels_pred, k, dist):
+def get_metrics(results, X, y, labels_pred, k, dist):
 
     
     # Compute metrics
