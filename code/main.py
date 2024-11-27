@@ -42,7 +42,8 @@ def main():
         print(f"Clustering completed with {n_clusters} clusters. Silhouette Score: {silhouette:.4f}")
 
     elif method=="K-Means":
-        pass
+        n_clusters = get_user_choice("Select the number of clusters:", [2,3,4,5,6,7,8,9,10], is_numeric=True)
+        distance = get_user_choice("Select the distance to use:", ["Euclidian", "Manhattan", "Cosine similarity"])
     elif method=="Fuzzy Clustering":
         c = get_user_choice("How many centroids would you like to use:", [2,3,4,5,6,7,8,9,10], is_numeric=True)
         m = get_user_choice("What m do you want to use:", [1,2,5,10,15,20,50,75,100], is_numeric=True)
