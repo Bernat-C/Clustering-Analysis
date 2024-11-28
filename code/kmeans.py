@@ -70,3 +70,4 @@ class CustomKMeans:
         norm_centers = np.linalg.norm(centers, axis=1)
         similarity = np.dot(X, centers.T) / (norm_X * norm_centers)  # Cosine similarity
         return 1 - similarity  # Return 1 - cosine similarity for clustering
+    
