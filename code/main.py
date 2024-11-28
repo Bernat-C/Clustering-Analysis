@@ -69,4 +69,4 @@ def main():
 
 if __name__ == "__main__":
     #main()
-    preprocess_vowel()
+    preprocess_sick()
