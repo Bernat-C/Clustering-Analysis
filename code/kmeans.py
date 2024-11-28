@@ -1,5 +1,7 @@
 import numpy as np
 from utils import compute_final_clusters
+from metrics import get_metrics
+import pandas as pd
 
 class CustomKMeans:
     def __init__(self, n_clusters, init=None, distance='euclidean', max_iters=100, tolerance=1e-4):
@@ -80,3 +82,28 @@ def run_kmeans(data, n_clusters, init=None, distance='euclidean'):
     centers = kmeans.centroids
     clusters = compute_final_clusters(data, labels, centers)
     return clusters
+
+def run_all_kmeans(data_X, data_y):
+    results = []
+    data_X = np.array(data_X)
+    data_y = np.array(data_y)
+    for k in range(2, 8):
+        for dist in ['euclidean', 'manhattan', 'cosine']:
+            best_results = None
+            best_silhouette = 0
+            for i in range(20):
+                random_indices = np.random.choice(len(data_X), k, replace=False)
+                centroids = data_X[random_indices]
+                kmeans = CustomKMeans(n_clusters=k, init=centroids, distance=dist, max_iters=100, tolerance=1e-4)
+                kmeans.fit(data_X)
+                labels_pred = kmeans.predict(data_X)
+                results_kmeans = get_metrics(data_X, data_y, labels_pred, k, dist)
+                if results_kmeans['Silhouette Coefficient'] > best_silhouette:
+                    best_silhouette = results_kmeans['Silhouette Coefficient']
+                    best_results = results_kmeans
+            results.append(best_results)
+
+    # Convert to DataFrame
+    results = pd.DataFrame(results)
+    return results
+

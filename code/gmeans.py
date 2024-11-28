@@ -2,6 +2,10 @@ import numpy as np
 from scipy.stats import normaltest
 from kmeans import CustomKMeans
 from utils import compute_final_clusters
+from sklearn.decomposition import PCA
+import pandas as pd
+from metrics import get_metrics
+
 
 class GMeans:
     def __init__(self, max_clusters=10, max_iters=100, tolerance=1e-4, distance='euclidean', alpha=0.05):
@@ -23,7 +27,7 @@ class GMeans:
         self.centroids = initial_center
         while len(self.centroids) < self.max_clusters:
             # Step 2: Apply K-Means
-            kmeans = CustomKMeans(n_clusters=len(self.centroids), init=self.centroids, distance=self.distance, max_iters=300, tolerance=1e-4)
+            kmeans = CustomKMeans(n_clusters=len(self.centroids), init=self.centroids, distance=self.distance)
             kmeans.fit(data)
             self.centroids = kmeans.centroids  # Initialize with the first centroid
             new_centroids = []
@@ -42,11 +46,22 @@ class GMeans:
 
                 if p_value < self.alpha:  # Step 5: Not Gaussian, split cluster
                     split = True
-                    offset = np.random.randn(n_features) * 0.1  # Small perturbation
-                    new_centroids.append(centroid + offset)
-                    new_centroids.append(centroid - offset)
+                    # Compute principal component
+                    pca = PCA(n_components=1)
+                    pca.fit(cluster_points)
+                    principal_component = pca.components_[0]
+                    eigenvalue = pca.explained_variance_[0]
+
+                    # Define m based on the principal component
+                    m = principal_component * np.sqrt(2 * eigenvalue)
+
+                    # Add new centroids c ± m
+                    new_centroids.append(centroid + m)
+                    new_centroids.append(centroid - m)
                 else:
                     new_centroids.append(centroid)
+                if len(new_centroids) >= self.max_clusters:
+                    break
 
             if not split:  # Step 6: Stop if no new centers are added
                 break
@@ -80,3 +95,19 @@ def run_gmeans(data, max_clusters, distance='euclidean'):
     centers = kmeans.centroids
     clusters = compute_final_clusters(data, labels, centers)
     return clusters
+
+def run_all_kmeans(data_X, data_y):
+    results = []
+    data_X = np.array(data_X)
+    data_y = np.array(data_y)
+    for k in range(2, 8):
+        for dist in ['euclidean', 'manhattan', 'cosine']:
+            kmeans = GMeans(max_clusters=k,distance=dist)
+            kmeans.fit(data_X)
+            labels_pred = kmeans.predict(data_X)
+            results_kmeans = get_metrics(data_X, data_y, labels_pred, k, dist)
+            results.append(results_kmeans)
+
+    # Convert to DataFrame
+    results = pd.DataFrame(results)
+    return results
