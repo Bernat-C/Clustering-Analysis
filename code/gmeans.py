@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.stats import normaltest
 from kmeans import CustomKMeans
+from utils import compute_final_clusters
 
 class GMeans:
     def __init__(self, max_clusters=10, max_iters=100, tolerance=1e-4, distance='euclidean', alpha=0.05):
@@ -69,3 +70,13 @@ class GMeans:
         norm_centers = np.linalg.norm(centers, axis=1)
         similarity = np.dot(X, centers.T) / (norm_X * norm_centers)
         return 1 - similarity
+
+
+def run_gmeans(data, max_clusters, distance='euclidean'):
+    data = np.array(data)
+    kmeans = GMeans(max_clusters=max_clusters,distance=distance)
+    kmeans.fit(data)
+    labels = kmeans.predict(data)
+    centers = kmeans.centroids
+    clusters = compute_final_clusters(data, labels, centers)
+    return clusters

@@ -2,6 +2,7 @@
 
 import numpy as np
 from kmeans import CustomKMeans
+from utils import compute_final_clusters
 
 class GlobalKMeans:
     def __init__(self, max_clusters, distance):
@@ -67,3 +68,12 @@ class GlobalKMeans:
 
     def transform(self, data):
         return self.distance(data, self.centroids)
+    
+def run_global_kmeans(data, max_clusters, distance='euclidean'):
+    data = np.array(data)
+    kmeans = GlobalKMeans(max_clusters=max_clusters,distance=distance)
+    kmeans.fit(data)
+    labels = kmeans.predict(data)
+    centers = kmeans.centroids
+    clusters = compute_final_clusters(data, labels, centers)
+    return clusters

@@ -1,7 +1,7 @@
 from scipy.io.arff import loadarff
 import pandas as pd
 
-from utils import drop_rows, drop_columns, min_max_scaler, one_hot_encoding, binary_encoding, fill_nans
+from utils import drop_rows, drop_columns, min_max_scaler, one_hot_encoding, label_encoder, binary_encoding, fill_nans
 
 def preprocess_sick():
     """
@@ -77,8 +77,9 @@ def preprocess_vowel():
     df_vowel = one_hot_encoding(df_vowel)
     df_vowel = binary_encoding(df_vowel)
     df_vowel = min_max_scaler(df_vowel)
+    y = label_encoder(y)
 
-    df_vowel = pd.concat([df_vowel, y])
+    df_vowel = pd.concat([df_vowel, y], axis=1)
 
     df_vowel.to_csv(f'datasets_processed/vowel.csv', index=False)
 

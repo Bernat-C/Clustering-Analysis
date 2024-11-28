@@ -66,6 +66,13 @@ def binary_encoding(df):
 
     return df
 
+def label_encoder(df):
+    le = LabelEncoder()
+    for column in df.columns:
+        df[column] = le.fit_transform(df[column])
+    return df
+
+
 
 def fill_nans(df, columns_predict):
 
@@ -148,3 +155,7 @@ def plot_clusters(clusters):
     # Show plot
     plt.grid(True)
     plt.show()
+
+def compute_final_clusters(data, labels, centers):
+    clusters = {i: {'points': data[labels==i], 'center': centers[i]} for i in range(len(centers))}
+    return clusters

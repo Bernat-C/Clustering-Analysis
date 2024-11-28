@@ -1,4 +1,5 @@
 import numpy as np
+from utils import compute_final_clusters
 
 class CustomKMeans:
     def __init__(self, n_clusters, init=None, distance='euclidean', max_iters=100, tolerance=1e-4):
@@ -70,4 +71,12 @@ class CustomKMeans:
         norm_centers = np.linalg.norm(centers, axis=1)
         similarity = np.dot(X, centers.T) / (norm_X * norm_centers)  # Cosine similarity
         return 1 - similarity  # Return 1 - cosine similarity for clustering
-    
+
+def run_kmeans(data, n_clusters, init=None, distance='euclidean'):
+    data = np.array(data)
+    kmeans = CustomKMeans(n_clusters=n_clusters, init=init, distance=distance, max_iters=100, tolerance=1e-4)
+    kmeans.fit(data)
+    labels = kmeans.predict(data)
+    centers = kmeans.centroids
+    clusters = compute_final_clusters(data, labels, centers)
+    return clusters

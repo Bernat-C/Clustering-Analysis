@@ -5,6 +5,9 @@ from preprocessing import preprocess_vowel, preprocess_sick, preprocess_grid
 from utils import get_user_choice, plot_clusters
 from fuzzyclustering import gs_fcm
 from spectralclustering import spectral_clustering
+from kmeans import run_kmeans
+from global_kmeans import run_global_kmeans
+from gmeans import run_gmeans
 
 def preprocess_datasets():
     df_sick_X, df_sick_y = preprocess_sick()
@@ -44,12 +47,18 @@ def main():
     elif method=="K-Means":
         n_clusters = get_user_choice("Select the number of clusters:", [2,3,4,5,6,7,8,9,10], is_numeric=True)
         distance = get_user_choice("Select the distance to use:", ["Euclidian", "Manhattan", "Cosine similarity"])
+        clusters = run_kmeans(dataset, n_clusters=n_clusters, init=None, distance=distance)
+        plot_clusters(clusters) 
     elif method=="Global-K-Means":
-        n_clusters = get_user_choice("Select the maximum number of clusters:", [2,3,4,5,6,7,8,9,10], is_numeric=True)
+        max_clusters = get_user_choice("Select the maximum number of clusters:", [2,3,4,5,6,7,8,9,10], is_numeric=True)
         distance = get_user_choice("Select the distance to use:", ["Euclidian", "Manhattan", "Cosine similarity"])
+        clusters = run_global_kmeans(dataset, max_clusters=max_clusters, distance=distance)
+        plot_clusters(clusters) 
     elif method=="G-Means":
-        n_clusters = get_user_choice("Select the maximum number of clusters:", [2,3,4,5,6,7,8,9,10], is_numeric=True)
+        max_clusters = get_user_choice("Select the maximum number of clusters:", [2,3,4,5,6,7,8,9,10], is_numeric=True)
         distance = get_user_choice("Select the distance to use:", ["Euclidian", "Manhattan", "Cosine similarity"])
+        clusters = run_gmeans(dataset, max_clusters=max_clusters, distance=distance)
+        plot_clusters(clusters) 
     elif method=="Fuzzy Clustering":
         c = get_user_choice("How many centroids would you like to use:", [2,3,4,5,6,7,8,9,10], is_numeric=True)
         m = get_user_choice("What m do you want to use:", [1,2,5,10,15,20,50,75,100], is_numeric=True)
@@ -59,4 +68,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    #main()
+    preprocess_vowel()
