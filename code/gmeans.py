@@ -5,6 +5,7 @@ from utils import compute_final_clusters
 from sklearn.decomposition import PCA
 import pandas as pd
 from metrics import get_metrics
+from scipy.stats import anderson
 
 
 class GMeans:
@@ -21,54 +22,73 @@ class GMeans:
         elif distance == 'cosine':
             self.distance = self.cosine_distance
     
+
     def fit(self, data):
         n_samples, n_features = data.shape
-        initial_center = [data.mean(axis=0)]  # Step 1: Start with the mean as the initial center
-        self.centroids = initial_center
+        self.centroids = [data.mean(axis=0)]  # Start with the mean of the data
+
         while len(self.centroids) < self.max_clusters:
-            # Step 2: Apply K-Means
-            kmeans = CustomKMeans(n_clusters=len(self.centroids), init=self.centroids, distance=self.distance)
+            kmeans = CustomKMeans(n_clusters=len(self.centroids), init=self.centroids)
             kmeans.fit(data)
-            self.centroids = kmeans.centroids  # Initialize with the first centroid
+            self.centroids = kmeans.centroids
             new_centroids = []
             split = False
 
             for j, centroid in enumerate(self.centroids):
-                # Step 3: Get points assigned to the current centroid
+                if len(new_centroids) +1 >= self.max_clusters:
+                    new_centroids.append(centroid)
+                    break
+                # Get points in the cluster
                 cluster_points = data[self.predict(data) == j]
                 if cluster_points.shape[0] < 16:  # Skip small clusters
                     new_centroids.append(centroid)
+                    continue
 
-                # Step 4: Check normality
-                direction = np.random.randn(n_features)  # Random direction vector
-                projected = np.dot(cluster_points - centroid, direction)
-                stat, p_value = normaltest(projected)
+                # Step 1: Initialize child centers using PCA
+                c1, c2 = self.initialize_centers_pca(cluster_points, centroid)
 
-                if p_value < self.alpha:  # Step 5: Not Gaussian, split cluster
+                # Step 2: Run K-Means with two centers
+                child_kmeans = CustomKMeans(n_clusters=2, init=[c1, c2])
+                child_kmeans.fit(cluster_points)
+                c1, c2 = child_kmeans.centroids
+
+                # Step 3: Project data onto the direction defined by c1 and c2
+                v = c1 - c2
+                v_norm = np.linalg.norm(v)
+                projection = np.dot(cluster_points - centroid, v / v_norm)
+
+                # Step 4: Normalize the projection (mean 0, variance 1)
+                projection = (projection - projection.mean()) / projection.std()
+
+                # Step 5: Apply Anderson-Darling test
+                stat, critical_values, significance_levels = anderson(projection)
+                if stat > critical_values[np.searchsorted(significance_levels, self.alpha * 100)]:
+                    # Reject H0: Split the cluster
                     split = True
-                    # Compute principal component
-                    pca = PCA(n_components=1)
-                    pca.fit(cluster_points)
-                    principal_component = pca.components_[0]
-                    eigenvalue = pca.explained_variance_[0]
-
-                    # Define m based on the principal component
-                    m = principal_component * np.sqrt(2 * eigenvalue)
-
-                    # Add new centroids c ± m
-                    new_centroids.append(centroid + m)
-                    new_centroids.append(centroid - m)
+                    new_centroids.extend([c1, c2])
                 else:
+                    # Accept H0: Keep the original center
                     new_centroids.append(centroid)
-                if len(new_centroids) >= self.max_clusters:
-                    break
 
-            if not split:  # Step 6: Stop if no new centers are added
+            if not split:
                 break
 
             self.centroids = np.array(new_centroids)
 
-        self.centroids = self.centroids
+    def initialize_centers_pca(self, cluster_points, centroid):
+        # Compute PCA on the cluster points
+        pca = PCA(n_components=1)
+        pca.fit(cluster_points - centroid)
+        principal_component = pca.components_[0]
+        eigenvalue = pca.explained_variance_[0]
+
+        # Calculate m = s * sqrt(2 * eigenvalue)
+        m = principal_component * np.sqrt(2 * eigenvalue)
+
+        # Initialize child centers
+        c1 = centroid + m
+        c2 = centroid - m
+        return c1, c2
 
     def predict(self, data):
         distances = self.distance(data, self.centroids)

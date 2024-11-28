@@ -89,8 +89,6 @@ def run_all_kmeans(data_X, data_y):
     data_y = np.array(data_y)
     for k in range(2, 8):
         for dist in ['euclidean', 'manhattan', 'cosine']:
-            best_results = None
-            best_silhouette = 0
             for i in range(20):
                 random_indices = np.random.choice(len(data_X), k, replace=False)
                 centroids = data_X[random_indices]
@@ -98,10 +96,7 @@ def run_all_kmeans(data_X, data_y):
                 kmeans.fit(data_X)
                 labels_pred = kmeans.predict(data_X)
                 results_kmeans = get_metrics(data_X, data_y, labels_pred, k, dist)
-                if results_kmeans['Silhouette Coefficient'] > best_silhouette:
-                    best_silhouette = results_kmeans['Silhouette Coefficient']
-                    best_results = results_kmeans
-            results.append(best_results)
+                results.append(results_kmeans)
 
     # Convert to DataFrame
     results = pd.DataFrame(results)
