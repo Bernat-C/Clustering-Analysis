@@ -24,7 +24,7 @@ def main():
     print("Welcome to our Clustering application.")
 
     dataset = get_user_choice("Please, select the dataset you would like to use:", ["sick", "grid","vowel"])
-    method = get_user_choice("Please, select the algorithm to use:", ["OPTICS", "Spectral Clustering", "K-Means", "Fuzzy Clustering"])
+    method = get_user_choice("Please, select the algorithm to use:", ["OPTICS", "Spectral Clustering", "K-Means", "Global-K-Means", "G-Means", "Fuzzy Clustering"])
 
     dataset = load_ds(dataset)
 
@@ -44,11 +44,17 @@ def main():
     elif method=="K-Means":
         n_clusters = get_user_choice("Select the number of clusters:", [2,3,4,5,6,7,8,9,10], is_numeric=True)
         distance = get_user_choice("Select the distance to use:", ["Euclidian", "Manhattan", "Cosine similarity"])
+    elif method=="Global-K-Means":
+        n_clusters = get_user_choice("Select the maximum number of clusters:", [2,3,4,5,6,7,8,9,10], is_numeric=True)
+        distance = get_user_choice("Select the distance to use:", ["Euclidian", "Manhattan", "Cosine similarity"])
+    elif method=="G-Means":
+        n_clusters = get_user_choice("Select the maximum number of clusters:", [2,3,4,5,6,7,8,9,10], is_numeric=True)
+        distance = get_user_choice("Select the distance to use:", ["Euclidian", "Manhattan", "Cosine similarity"])
     elif method=="Fuzzy Clustering":
         c = get_user_choice("How many centroids would you like to use:", [2,3,4,5,6,7,8,9,10], is_numeric=True)
         m = get_user_choice("What m do you want to use:", [1,2,5,10,15,20,50,75,100], is_numeric=True)
         clusters = gs_fcm(dataset,c,m)
-        plot_clusters(clusters)
+        plot_clusters(clusters) 
 
 
 
