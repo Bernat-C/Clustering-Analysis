@@ -96,7 +96,7 @@ def run_gmeans(data, max_clusters, distance='euclidean'):
     clusters = compute_final_clusters(data, labels, centers)
     return clusters
 
-def run_all_kmeans(data_X, data_y):
+def run_all_gmeans(data_X, data_y):
     results = []
     data_X = np.array(data_X)
     data_y = np.array(data_y)
