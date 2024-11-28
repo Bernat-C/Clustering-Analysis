@@ -1,7 +1,7 @@
 from scipy.io.arff import loadarff
 import pandas as pd
 
-from utils import drop_rows, drop_columns, min_max_scaler, one_hot_encoding, label_encoder, binary_encoding, fill_nans
+from utils import drop_rows_sick, drop_columns, min_max_scaler, one_hot_encoding, label_encoder, binary_encoding, fill_nans
 
 def preprocess_sick():
     """
@@ -9,7 +9,7 @@ def preprocess_sick():
     :return: dataframe
     """
     # Load arff file
-    df_sick, meta_train = loadarff(f'datasets/sick.arff')
+    df_sick, meta_train = loadarff(f'../datasets/sick.arff')
 
     # Define datasets
     df_sick = pd.DataFrame(df_sick)
@@ -26,8 +26,8 @@ def preprocess_sick():
         if (percentage > 0.1) and (percentage < 99):
             columns_with_nans.append(col)
 
-    # We remove the rows where the age was null (there is only one)
-    df_sick = drop_rows(df_sick, ['age'])
+    # We remove the rows where the age was null and where it is greater than 100, which means there was an error (there are two)
+    df_sick = drop_rows_sick(df_sick, ['age'])
 
     df_sick = drop_columns(df_sick, ['TBG_measured', 'TBG'])
     df_sick = min_max_scaler(df_sick, ['age'])
@@ -38,7 +38,7 @@ def preprocess_sick():
 
     df_sick = df_sick[[col for col in df_sick if col != 'sick'] + ['sick']]
 
-    df_sick.to_csv(f'datasets_processed/sick.csv', index=False)
+    df_sick.to_csv(f'../datasets_processed/sick.csv', index=False)
 
     return df_sick.iloc[:,:-1], df_sick.iloc[:,-1]
 

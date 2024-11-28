@@ -16,9 +16,11 @@ def drop_columns(df, column_names):
     df = df.drop(columns = column_names)
     return df
 
-def drop_rows(df, column_names):
+def drop_rows_sick(df, column_names):
     df = df.dropna(subset=column_names)
+    df = df[df["age"] <= 120] # Drop ages over 120
     df = df.reset_index(drop=True)
+
     return df
 
 """
