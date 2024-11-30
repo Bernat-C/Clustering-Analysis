@@ -1,13 +1,15 @@
 import os
 import pandas as pd
 
+from metrics import get_metrics_general
 from preprocessing import preprocess_vowel, preprocess_sick, preprocess_grid
 from utils import get_user_choice, plot_clusters
-from fuzzyclustering import gs_fcm
+from fuzzyclustering import gs_fcm, run_all_gs_fcm, get_cluster_list
 from spectralclustering import spectral_clustering
 from kmeans import run_kmeans
 from global_kmeans import run_global_kmeans
 from gmeans import run_gmeans
+from tqdm import tqdm
 
 def preprocess_datasets():
     df_sick_X, df_sick_y = preprocess_sick()
@@ -21,15 +23,21 @@ def load_ds(name):
     df = pd.read_csv(file)
 
     # We remove the class of the dataset as we will not be using it
-    return df.iloc[:,:-1]
+    return df.iloc[:,:-1], df.iloc[:,-1]
+
+def runAllFuzzyClustering():
+    for dataset in tqdm(["sick", "grid", "vowel"], desc="Processing datasets"):
+        df_X, y = load_ds(dataset)
+        results = run_all_gs_fcm(df_X, y)
+        results.to_csv(f"../output/fuzzyclustering_{dataset}.csv")
 
 def main():
     print("Welcome to our Clustering application.")
 
     dataset = get_user_choice("Please, select the dataset you would like to use:", ["sick", "grid","vowel"])
-    method = get_user_choice("Please, select the algorithm to use:", ["OPTICS", "Spectral Clustering", "K-Means", "Global-K-Means", "G-Means", "Fuzzy Clustering"])
+    method = get_user_choice("Please, select the algorithm to use:", ["OPTICS", "Spectral Clustering", "K-Means", "Global-K-Means", "G-Means", "GS Fuzzy Clustering"])
 
-    dataset = load_ds(dataset)
+    df_X, df_y = load_ds(dataset)
 
     if method=="OPTICS":
         pass
@@ -41,29 +49,44 @@ def main():
         if affinity == "nearest_neighbors":
             n_neighbors = get_user_choice("Select the number of neighbors:", [5, 10, 15, 20], is_numeric=True)
 
-        labels, silhouette = spectral_clustering(dataset, n_clusters, affinity, assign_labels, n_neighbors)
+        labels, silhouette = spectral_clustering(df_X, n_clusters, affinity, assign_labels, n_neighbors)
         print(f"Clustering completed with {n_clusters} clusters. Silhouette Score: {silhouette:.4f}")
 
     elif method=="K-Means":
         n_clusters = get_user_choice("Select the number of clusters:", [2,3,4,5,6,7,8,9,10], is_numeric=True)
         distance = get_user_choice("Select the distance to use:", ["Euclidian", "Manhattan", "Cosine similarity"])
-        clusters = run_kmeans(dataset, n_clusters=n_clusters, init=None, distance=distance)
+        clusters = run_kmeans(df_X, n_clusters=n_clusters, init=None, distance=distance)
         plot_clusters(clusters) 
     elif method=="Global-K-Means":
         max_clusters = get_user_choice("Select the maximum number of clusters:", [2,3,4,5,6,7,8,9,10], is_numeric=True)
         distance = get_user_choice("Select the distance to use:", ["Euclidian", "Manhattan", "Cosine similarity"])
-        clusters = run_global_kmeans(dataset, max_clusters=max_clusters, distance=distance)
+        clusters = run_global_kmeans(df_X, max_clusters=max_clusters, distance=distance)
         plot_clusters(clusters) 
     elif method=="G-Means":
         max_clusters = get_user_choice("Select the maximum number of clusters:", [2,3,4,5,6,7,8,9,10], is_numeric=True)
         distance = get_user_choice("Select the distance to use:", ["Euclidian", "Manhattan", "Cosine similarity"])
-        clusters = run_gmeans(dataset, max_clusters=max_clusters, distance=distance)
+        clusters = run_gmeans(df_X, max_clusters=max_clusters, distance=distance)
         plot_clusters(clusters) 
-    elif method=="Fuzzy Clustering":
+    elif method=="GS Fuzzy Clustering":
         c = get_user_choice("How many centroids would you like to use:", [2,3,4,5,6,7,8,9,10], is_numeric=True)
-        m = get_user_choice("What m do you want to use:", [1,2,5,10,15,20,50,75,100], is_numeric=True)
-        clusters = gs_fcm(dataset,c,m)
-        plot_clusters(clusters) 
+        m = get_user_choice("What m (fuzzification parameter) do you want to use:", [1,2,5,10,15,20,50,75,100], is_numeric=True)
+        eta = get_user_choice("What eta (generalized suppression factor) do you want to use:", [0.1,0.3,0.5,0.7,0.9], is_numeric=True, is_float=True)
+        clusters, iters, centers = gs_fcm(df_X,c,m,suppress=True,generalized=True,eta=eta)
+
+        # Showing the results
+        print("---------------------------------------------------------------------------------------")
+        print("RESULTS: ")
+        print("---------------------------------------------------------------------------------------")
+        print(f"GS_FCM converged in {iters} iterations.")
+        assignments = get_cluster_list(df_X,centers,clusters,c)
+        metrics = get_metrics_general(df_X, df_y, clusters, f"GS-FCM_k{c}_m{m}_eta{eta}", iters)
+        print("---------------------------------------------------------------------------------------")
+        print("Metrics Summary: ")
+        for key, value in metrics.items():
+            print(f"{key}: {value}")
+        print("---------------------------------------------------------------------------------------")
+        if dataset == "grid":
+            plot_clusters(assignments)
 
 
 

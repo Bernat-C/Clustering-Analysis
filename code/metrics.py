@@ -25,6 +25,26 @@ def f_measure(labels_true, labels_pred):
     recall = contingency_matrix.max(axis=1).sum() / len(labels_true)
     return 2 * (precision * recall) / (precision + recall)
 
+def get_metrics_general(X, labels_true, labels_pred, method, n_iterations):
+    # Compute metrics
+    dbi = davies_bouldin_index(X, labels_pred)
+    silhouette = silhouette_coefficient(X, labels_pred)
+
+    ari = adjusted_rand_index(labels_true, labels_pred)
+    purity = purity_score(labels_true, labels_pred)
+    fmeasure = f_measure(labels_true, labels_pred)
+
+    # Append results
+    results = {
+        "Method": method,
+        "Purity": purity,
+        "F-Measure": fmeasure,
+        "Davies-Bouldin Index": dbi,
+        "Silhouette Coefficient": silhouette,
+        "Iterations": n_iterations
+    }
+    return results
+
 def get_metrics(X, y, labels_pred, k, dist):
 
     # Compute metrics

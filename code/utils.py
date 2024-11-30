@@ -100,7 +100,7 @@ def fill_nans(df, columns_predict):
 
 #### UTILS REGARDING INPUT
 
-def get_user_choice(prompt, options, is_numeric = False):
+def get_user_choice(prompt, options, is_numeric = False, is_float = False):
     while True:
         print(prompt)
         for i, option in enumerate(options, 1):
@@ -110,6 +110,8 @@ def get_user_choice(prompt, options, is_numeric = False):
                 print(f" {i}. {option}")
         choice = input("Please enter the number of your choice: ")
 
+        if is_numeric and is_float and float(choice) in options:
+            return float(choice)
         if is_numeric and int(choice) in options:
             return int(choice)
         if choice in options:
@@ -134,6 +136,8 @@ def plot_clusters(clusters):
     :param clusters: Containing a list of clusters, and each cluster containing points (a list of pairs x,y for every point) and center, containing a pair x,y indicating the center of the cluster.
     """
     plt.figure(figsize=(8, 6))
+
+    print("Cluster point distribution: ")
 
     # Loop through the clusters
     for cluster_id, cluster_data in clusters.items():

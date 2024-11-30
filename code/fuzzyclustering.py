@@ -1,4 +1,8 @@
 import numpy as np
+import pandas as pd
+
+from metrics import get_metrics_general
+
 
 def update_centers(data, member_matrix, m):
     """
@@ -37,16 +41,21 @@ def update_membership_matrix(data, centers, m):
 
     return membership_matrix
 
-def compute_final_clusters(data, centers, membership_matrix, n_clusters):
+def defuzzyfy(membership_matrix):
+    # Assign points to clusters based on the highest membership
+    cluster_memberships = np.argmax(membership_matrix, axis=0)
+    return cluster_memberships
+
+def get_cluster_list(data, centers, assignments, n_clusters):
     """
     Compute the final clusters (not fuzzy anymore) based on the membership matrix and centers.
     """
     clusters = {i: {'points': [], 'center': centers[i]} for i in range(n_clusters)}
 
-    # Assign points to clusters based on the highest membership
-    for el in range(len(data)):
-        cluster_idx = np.argmax(membership_matrix[:, el])
-        clusters[cluster_idx]['points'].append(data.iloc[el])
+    data = np.array(data)
+
+    for point, cluster_id in zip(data, assignments):
+        clusters[cluster_id]['points'].append(point)
 
     return clusters
 
@@ -61,6 +70,8 @@ def update_alpha_theta(u_w, m, eta=0.5):
     - m (float): Fuzziness parameter (m > 1).
     - eta (float): Suppression parameter (0 < eta < 1).
     """
+
+
     alpha_k = 1 / (1 - u_w + u_w * (1 - eta) ** (2 / (1 - m)))
 
     return alpha_k
@@ -126,6 +137,7 @@ def gs_fcm(data, n_clusters, m=2, max_iter=1000, tolerance=1e-5, suppress=False,
     centers = np.dot(member_matrix, data) / np.sum(member_matrix, axis=1)[:, None]  # Compute initial centers
 
     prev_centers = np.zeros_like(centers)
+    n_iters = 0
 
     # Optimization loop
     for iter in range(max_iter):
@@ -141,9 +153,23 @@ def gs_fcm(data, n_clusters, m=2, max_iter=1000, tolerance=1e-5, suppress=False,
 
         # Check for convergence (if centers do not change significantly)
         if np.sum(np.linalg.norm(centers - prev_centers, axis=0)) < tolerance: # Check if the sum of individual norms for each cluster changes significantly
-            print(f"Convergence after {iter} iterations.")
+            #print(f"Convergence after {iter} iterations.")
+            n_iters = iter
             break
 
         prev_centers = centers.copy()
 
-    return compute_final_clusters(data, centers, member_matrix, n_clusters)
+    return defuzzyfy(member_matrix), n_iters, centers
+
+def run_all_gs_fcm(data_X, data_y):
+    results = []
+    for k in range(2, 3):
+        for m in [1.05, 1.2, 1.5, 1.75, 2, 2.5, 3]: # 1 < m
+            for eta in [0.1, 0.3, 0.5, 0.7, 0.9]: # 0 < eta < 1
+                clusters, n_iterations, _ = gs_fcm(data_X, k, m=m, suppress=True, generalized=True, eta=eta)
+                results_kmeans = get_metrics_general(data_X, data_y, clusters, f"GS-FCM_k{k}_m{m}_eta{eta}", n_iterations)
+                results.append(results_kmeans)
+
+    # Convert to DataFrame
+    results = pd.DataFrame(results)
+    return results
