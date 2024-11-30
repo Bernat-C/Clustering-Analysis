@@ -42,15 +42,15 @@ def main():
     if method=="OPTICS":
         pass
     elif method=="Spectral Clustering":
-        n_clusters = get_user_choice("Select the number of clusters:", [2,3,4,5,6,7,8,9,10], is_numeric=True)
+        n_clusters = get_user_choice("Select the number of clusters:", [2, 3, 4, 5, 6, 7, 8, 9, 10], is_numeric=True)
         affinity = get_user_choice("Select the affinity type:", ["rbf", "nearest_neighbors"])
-        assign_labels = get_user_choice("Select the label assignment method:", ["kmeans", "discretize"])
         n_neighbors = None
         if affinity == "nearest_neighbors":
             n_neighbors = get_user_choice("Select the number of neighbors:", [5, 10, 15, 20], is_numeric=True)
+        assign_labels = get_user_choice("Select the label assignment method:", ["kmeans", "discretize"])
+        eigen_solver = get_user_choice("Select the eigen solver method:", ['arpack', 'lobpcg'])
 
-        labels, silhouette = spectral_clustering(df_X, n_clusters, affinity, assign_labels, n_neighbors)
-        print(f"Clustering completed with {n_clusters} clusters. Silhouette Score: {silhouette:.4f}")
+        labels = spectral_clustering(dataset, n_clusters, affinity, n_neighbors, assign_labels, eigen_solver)
 
     elif method=="K-Means":
         n_clusters = get_user_choice("Select the number of clusters:", [2,3,4,5,6,7,8,9,10], is_numeric=True)
