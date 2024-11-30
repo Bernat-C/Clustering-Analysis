@@ -2,6 +2,7 @@ import os
 import pandas as pd
 
 from metrics import get_metrics_general
+from optics import apply_optics
 from preprocessing import preprocess_vowel, preprocess_sick, preprocess_grid
 from utils import get_user_choice, plot_clusters
 from fuzzyclustering import gs_fcm, run_all_gs_fcm, get_cluster_list
@@ -40,7 +41,10 @@ def main():
     df_X, df_y = load_ds(dataset)
 
     if method=="OPTICS":
-        pass
+        algorithm = get_user_choice("Select algorithm:", ["ball_tree", "kd_tree"], is_numeric=True)
+        metric = get_user_choice("Select the distance to use:", ["euclidean", "manhattan", "minkowski"])
+        clusters = apply_optics(df_X, metric=metric, algorithm=algorithm)
+        plot_clusters(clusters)
     elif method=="Spectral Clustering":
         n_clusters = get_user_choice("Select the number of clusters:", [2,3,4,5,6,7,8,9,10,11], is_numeric=True)
         affinity = get_user_choice("Select the affinity type:", ["rbf", "nearest_neighbors"])
