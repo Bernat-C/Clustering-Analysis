@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 from metrics import get_metrics_general
 
@@ -34,7 +35,8 @@ def update_membership_matrix(data, centers, m):
 
     # Compute the inverse distance raised to the power of (m-1)
     dist = np.maximum(dist, 1e-10)  # Avoid division by zero
-    dist_m = dist ** (-2 / (m - 1))
+
+    dist_m = (dist + 1e-5) ** (-2 / (m - 1)) # Avoid infinity
 
     # Normalize to get membership matrix
     membership_matrix = dist_m / np.sum(dist_m, axis=0) # Axis = 0 as we are normalizing across clusters
@@ -161,11 +163,13 @@ def gs_fcm(data, n_clusters, m=2, max_iter=1000, tolerance=1e-5, suppress=False,
 
     return defuzzyfy(member_matrix), n_iters, centers
 
-def run_all_gs_fcm(data_X, data_y):
+def run_all_gs_fcm(data_X, data_y, dataset=""):
     results = []
-    for k in range(2, 3):
-        for m in [1.05, 1.2, 1.5, 1.75, 2, 2.5, 3]: # 1 < m
-            for eta in [0.1, 0.3, 0.5, 0.7, 0.9]: # 0 < eta < 1
+    for k in range(2,12): # Between 2 and 11
+        for m in [1.05, 1.5, 1.75, 2, 2.5, 3]: # 1 < m
+            eta_bar = tqdm([0.1, 0.3, 0.5, 0.7, 0.9], desc="", position=0, leave=False)
+            for eta in eta_bar: # 0 < eta < 1
+                eta_bar.set_description(f"Processing DS={dataset} k={k}, m={m:.2f}, eta={eta:.1f}")
                 clusters, n_iterations, _ = gs_fcm(data_X, k, m=m, suppress=True, generalized=True, eta=eta)
                 results_kmeans = get_metrics_general(data_X, data_y, clusters, f"GS-FCM_k{k}_m{m}_eta{eta}", n_iterations)
                 results.append(results_kmeans)
