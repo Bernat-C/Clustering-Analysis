@@ -69,7 +69,7 @@ def main():
         plot_clusters(clusters) 
     elif method=="GS Fuzzy Clustering":
         c = get_user_choice("How many centroids would you like to use:", [2,3,4,5,6,7,8,9,10], is_numeric=True)
-        m = get_user_choice("What m (fuzzification parameter) do you want to use:", [1,2,5,10,15,20,50,75,100], is_numeric=True)
+        m = get_user_choice("What m (fuzzification parameter) do you want to use:", [1.05, 1.2, 1.5, 1.75, 2, 2.5, 3], is_numeric=True)
         eta = get_user_choice("What eta (generalized suppression factor) do you want to use:", [0.1,0.3,0.5,0.7,0.9], is_numeric=True, is_float=True)
         clusters, iters, centers = gs_fcm(df_X,c,m,suppress=True,generalized=True,eta=eta)
 
