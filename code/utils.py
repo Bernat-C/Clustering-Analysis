@@ -165,3 +165,19 @@ def plot_clusters(clusters):
 def compute_final_clusters(data, labels, centers):
     clusters = {i: {'points': data[labels==i], 'center': centers[i]} for i in range(len(centers))}
     return clusters
+
+def plot_spectral(data, labels):
+    data = np.array(data)
+
+    # plot results
+    plt.figure(figsize=(8, 6))
+    scatter = plt.scatter(data[:, 0], data[:, 1], c=labels, cmap='viridis', s=50)
+    plt.xlabel('X Coordinate')
+    plt.ylabel('Y Coordinate')
+    plt.title('Cluster Points')
+
+    legend_labels = [f"Cluster {i}" for i in np.unique(labels)]
+    handles, _ = scatter.legend_elements()
+    plt.legend(handles, legend_labels, title="Clusters")
+
+    plt.show()

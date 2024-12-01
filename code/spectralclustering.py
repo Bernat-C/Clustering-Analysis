@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.cluster import SpectralClustering
 
 
+
 def spectral_clustering(data, n_clusters=3, affinity='rbf', n_neighbors=None, assign_labels='kmeans',  eigen_solver
 = 'arpack'):
 
@@ -14,7 +15,6 @@ def spectral_clustering(data, n_clusters=3, affinity='rbf', n_neighbors=None, as
             assign_labels=assign_labels,
             eigen_solver=eigen_solver,
             n_neighbors=n_neighbors,
-            random_state=42
         )
     else:
         model = SpectralClustering(
@@ -22,7 +22,6 @@ def spectral_clustering(data, n_clusters=3, affinity='rbf', n_neighbors=None, as
             affinity=affinity,
             assign_labels=assign_labels,
             eigen_solver=eigen_solver,
-            random_state=42
         )
 
     # Perform clustering
@@ -30,3 +29,6 @@ def spectral_clustering(data, n_clusters=3, affinity='rbf', n_neighbors=None, as
 
 
     return labels
+
+
+

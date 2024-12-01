@@ -1,16 +1,18 @@
 import os
+os.environ["OMP_NUM_THREADS"] = "4"
+
 import pandas as pd
 
 from metrics import get_metrics_general
 from optics import apply_optics
 from preprocessing import preprocess_vowel, preprocess_sick, preprocess_grid
-from utils import get_user_choice, plot_clusters
+from utils import get_user_choice, plot_clusters, plot_spectral
 from fuzzyclustering import gs_fcm, run_all_gs_fcm, get_cluster_list
 from spectralclustering import spectral_clustering
 from kmeans import run_kmeans
 from global_kmeans import run_global_kmeans
 from gmeans import run_gmeans
-from tqdm import tqdm
+
 
 def preprocess_datasets():
     df_sick_X, df_sick_y = preprocess_sick()
@@ -45,6 +47,7 @@ def main():
         metric = get_user_choice("Select the distance to use:", ["euclidean", "manhattan", "minkowski"])
         clusters = apply_optics(df_X, metric=metric, algorithm=algorithm)
         plot_clusters(clusters)
+
     elif method=="Spectral Clustering":
         n_clusters = get_user_choice("Select the number of clusters:", [2,3,4,5,6,7,8,9,10,11], is_numeric=True)
         affinity = get_user_choice("Select the affinity type:", ["rbf", "nearest_neighbors"])
@@ -54,7 +57,17 @@ def main():
         assign_labels = get_user_choice("Select the label assignment method:", ["kmeans", "discretize"])
         eigen_solver = get_user_choice("Select the eigen solver method:", ['arpack', 'lobpcg'])
 
-        labels = spectral_clustering(dataset, n_clusters, affinity, n_neighbors, assign_labels, eigen_solver)
+        labels = spectral_clustering(df_X, n_clusters, affinity, n_neighbors, assign_labels,  eigen_solver)
+        metrics = get_metrics_general(df_X, df_y, labels, f"spectral_n_{n_clusters}_affinity_{affinity}_assign_labels_{assign_labels}_eigen_solver_{eigen_solver}", False)
+
+        print("---------------------------------------------------------------------------------------")
+        print("Metrics Summary: ")
+        for key, value in metrics.items():
+            print(f"{key}: {value}")
+        print("---------------------------------------------------------------------------------------")
+
+        if dataset == "grid":
+            plot_spectral(df_X, labels)
 
     elif method=="K-Means":
         n_clusters = get_user_choice("Select the number of clusters:", [2,3,4,5,6,7,8,9,10,11], is_numeric=True)
@@ -76,6 +89,7 @@ def main():
         m = get_user_choice("What m (fuzzification parameter) do you want to use:", [1.05, 1.2, 1.5, 1.75, 2, 2.5, 3], is_numeric=True)
         eta = get_user_choice("What eta (generalized suppression factor) do you want to use:", [0.1,0.3,0.5,0.7,0.9], is_numeric=True, is_float=True)
         clusters, iters, centers = gs_fcm(df_X,c,m,suppress=True,generalized=True,eta=eta)
+
 
         # Showing the results
         print("---------------------------------------------------------------------------------------")
