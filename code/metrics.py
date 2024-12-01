@@ -37,6 +37,7 @@ def get_metrics_general(X, labels_true, labels_pred, method, n_iterations):
     # Append results
     results = {
         "Method": method,
+        "ARI": ari,
         "Purity": purity,
         "F-Measure": fmeasure,
         "Davies-Bouldin Index": dbi,
