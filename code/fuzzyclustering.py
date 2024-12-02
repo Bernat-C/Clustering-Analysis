@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -170,8 +172,11 @@ def run_all_gs_fcm(data_X, data_y, dataset=""):
             eta_bar = tqdm([0.1, 0.3, 0.5, 0.7, 0.9], desc="", position=0, leave=False)
             for eta in eta_bar: # 0 < eta < 1
                 eta_bar.set_description(f"Processing DS={dataset} k={k}, m={m:.2f}, eta={eta:.1f}")
+                start_time = time.time()
                 clusters, n_iterations, _ = gs_fcm(data_X, k, m=m, suppress=True, generalized=True, eta=eta)
-                results_kmeans = get_metrics_general(data_X, data_y, clusters, f"GS-FCM_k{k}_m{m}_eta{eta}", n_iterations)
+                end_time = time.time()
+                elapsed_time = end_time - start_time
+                results_kmeans = get_metrics_general(data_X, data_y, clusters, f"GS-FCM_k{k}_m{m}_eta{eta}", elapsed_time, n_iterations)
                 results.append(results_kmeans)
 
     # Convert to DataFrame
