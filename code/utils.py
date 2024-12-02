@@ -112,7 +112,7 @@ def get_user_choice(prompt, options, is_numeric = False, is_float = False):
 
         if is_numeric and is_float and float(choice) in options:
             return float(choice)
-        if is_numeric and int(choice) in options:
+        if not is_float and is_numeric and int(choice) in options:
             return int(choice)
         if choice in options:
             return choice

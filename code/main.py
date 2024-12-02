@@ -1,4 +1,6 @@
 import os
+import time
+
 os.environ["OMP_NUM_THREADS"] = "4"
 
 import pandas as pd
@@ -37,74 +39,81 @@ def runAllFuzzyClustering():
 def main():
     print("Welcome to our Clustering application.")
 
-    dataset = get_user_choice("Please, select the dataset you would like to use:", ["sick", "grid","vowel"])
-    method = get_user_choice("Please, select the algorithm to use:", ["OPTICS", "Spectral Clustering", "K-Means", "Global-K-Means", "G-Means", "GS Fuzzy Clustering"])
+    while True:
+        dataset = get_user_choice("Please, select the dataset you would like to use:", ["sick", "grid","vowel"])
+        method = get_user_choice("Please, select the algorithm to use:", ["OPTICS", "Spectral Clustering", "K-Means", "Global-K-Means", "G-Means", "GS Fuzzy Clustering"])
 
-    df_X, df_y = load_ds(dataset)
+        df_X, df_y = load_ds(dataset)
 
-    if method=="OPTICS":
-        algorithm = get_user_choice("Select algorithm:", ["ball_tree", "kd_tree"], is_numeric=True)
-        metric = get_user_choice("Select the distance to use:", ["euclidean", "manhattan", "minkowski"])
-        clusters = apply_optics(df_X, metric=metric, algorithm=algorithm)
-        plot_clusters(clusters)
+        if method=="OPTICS":
+            algorithm = get_user_choice("Select algorithm:", ["ball_tree", "kd_tree"], is_numeric=True)
+            metric = get_user_choice("Select the distance to use:", ["euclidean", "manhattan", "minkowski"])
+            clusters = apply_optics(df_X, metric=metric, algorithm=algorithm)
+            plot_clusters(clusters)
 
-    elif method=="Spectral Clustering":
-        n_clusters = get_user_choice("Select the number of clusters:", [2,3,4,5,6,7,8,9,10,11], is_numeric=True)
-        affinity = get_user_choice("Select the affinity type:", ["rbf", "nearest_neighbors"])
-        n_neighbors = None
-        if affinity == "nearest_neighbors":
-            n_neighbors = get_user_choice("Select the number of neighbors:", [5, 10, 15, 20], is_numeric=True)
-        assign_labels = get_user_choice("Select the label assignment method:", ["kmeans", "discretize"])
-        eigen_solver = get_user_choice("Select the eigen solver method:", ['arpack', 'lobpcg'])
+        elif method=="Spectral Clustering":
+            n_clusters = get_user_choice("Select the number of clusters:", [2,3,4,5,6,7,8,9,10,11], is_numeric=True)
+            affinity = get_user_choice("Select the affinity type:", ["rbf", "nearest_neighbors"])
+            n_neighbors = None
+            if affinity == "nearest_neighbors":
+                n_neighbors = get_user_choice("Select the number of neighbors:", [5, 10, 15, 20], is_numeric=True)
+            assign_labels = get_user_choice("Select the label assignment method:", ["kmeans", "discretize"])
+            eigen_solver = get_user_choice("Select the eigen solver method:", ['arpack', 'lobpcg'])
 
-        labels = spectral_clustering(df_X, n_clusters, affinity, n_neighbors, assign_labels,  eigen_solver)
-        metrics = get_metrics_general(df_X, df_y, labels, f"spectral_n_{n_clusters}_affinity_{affinity}_assign_labels_{assign_labels}_eigen_solver_{eigen_solver}", False)
+            start_time = time.time()
+            labels = spectral_clustering(df_X, n_clusters, affinity, n_neighbors, assign_labels,  eigen_solver)
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+            metrics = get_metrics_general(df_X, df_y, labels, f"spectral_n_{n_clusters}_affinity_{affinity}_assign_labels_{assign_labels}_eigen_solver_{eigen_solver}", elapsed_time, False)
 
-        print("---------------------------------------------------------------------------------------")
-        print("Metrics Summary: ")
-        for key, value in metrics.items():
-            print(f"{key}: {value}")
-        print("---------------------------------------------------------------------------------------")
+            print("---------------------------------------------------------------------------------------")
+            print("Metrics Summary: ")
+            for key, value in metrics.items():
+                print(f"{key}: {value}")
+            print("---------------------------------------------------------------------------------------")
 
-        if dataset == "grid":
-            plot_spectral(df_X, labels)
+            if dataset == "grid":
+                plot_spectral(df_X, labels)
 
-    elif method=="K-Means":
-        n_clusters = get_user_choice("Select the number of clusters:", [2,3,4,5,6,7,8,9,10,11], is_numeric=True)
-        distance = get_user_choice("Select the distance to use:", ["Euclidian", "Manhattan", "Cosine similarity"])
-        clusters = run_kmeans(df_X, n_clusters=n_clusters, init=None, distance=distance)
-        plot_clusters(clusters) 
-    elif method=="Global-K-Means":
-        max_clusters = get_user_choice("Select the maximum number of clusters:", [2,3,4,5,6,7,8,9,10,11], is_numeric=True)
-        distance = get_user_choice("Select the distance to use:", ["Euclidian", "Manhattan", "Cosine similarity"])
-        clusters = run_global_kmeans(df_X, max_clusters=max_clusters, distance=distance)
-        plot_clusters(clusters) 
-    elif method=="G-Means":
-        max_clusters = get_user_choice("Select the maximum number of clusters:", [2,3,4,5,6,7,8,9,10,11], is_numeric=True)
-        distance = get_user_choice("Select the distance to use:", ["Euclidian", "Manhattan", "Cosine similarity"])
-        clusters = run_gmeans(df_X, max_clusters=max_clusters, distance=distance)
-        plot_clusters(clusters) 
-    elif method=="GS Fuzzy Clustering":
-        c = get_user_choice("How many centroids would you like to use:", [2,3,4,5,6,7,8,9,10,11], is_numeric=True)
-        m = get_user_choice("What m (fuzzification parameter) do you want to use:", [1.05, 1.2, 1.5, 1.75, 2, 2.5, 3], is_numeric=True)
-        eta = get_user_choice("What eta (generalized suppression factor) do you want to use:", [0.1,0.3,0.5,0.7,0.9], is_numeric=True, is_float=True)
-        clusters, iters, centers = gs_fcm(df_X,c,m,suppress=True,generalized=True,eta=eta)
+        elif method=="K-Means":
+            n_clusters = get_user_choice("Select the number of clusters:", [2,3,4,5,6,7,8,9,10,11], is_numeric=True)
+            distance = get_user_choice("Select the distance to use:", ["Euclidian", "Manhattan", "Cosine similarity"])
+            clusters = run_kmeans(df_X, n_clusters=n_clusters, init=None, distance=distance)
+            plot_clusters(clusters)
+        elif method=="Global-K-Means":
+            max_clusters = get_user_choice("Select the maximum number of clusters:", [2,3,4,5,6,7,8,9,10,11], is_numeric=True)
+            distance = get_user_choice("Select the distance to use:", ["Euclidian", "Manhattan", "Cosine similarity"])
+            clusters = run_global_kmeans(df_X, max_clusters=max_clusters, distance=distance)
+            plot_clusters(clusters)
+        elif method=="G-Means":
+            max_clusters = get_user_choice("Select the maximum number of clusters:", [2,3,4,5,6,7,8,9,10,11], is_numeric=True)
+            distance = get_user_choice("Select the distance to use:", ["Euclidian", "Manhattan", "Cosine similarity"])
+            clusters = run_gmeans(df_X, max_clusters=max_clusters, distance=distance)
+            plot_clusters(clusters)
+        elif method=="GS Fuzzy Clustering":
+            c = get_user_choice("How many centroids would you like to use:", [2,3,4,5,6,7,8,9,10,11], is_numeric=True)
+            m = get_user_choice("What m (fuzzification parameter) do you want to use:", [1.05, 1.2, 1.5, 1.75, 2, 2.5, 3], is_numeric=True, is_float=True)
+            eta = get_user_choice("What eta (generalized suppression factor) do you want to use:", [0.1,0.3,0.5,0.7,0.9], is_numeric=True, is_float=True)
+            start_time = time.time()
+            clusters, iters, centers = gs_fcm(df_X,c,m,suppress=True,generalized=True,eta=eta)
+            end_time = time.time()
+            elapsed_time = end_time - start_time
 
 
-        # Showing the results
-        print("---------------------------------------------------------------------------------------")
-        print("RESULTS: ")
-        print("---------------------------------------------------------------------------------------")
-        print(f"GS_FCM converged in {iters} iterations.")
-        assignments = get_cluster_list(df_X,centers,clusters,c)
-        metrics = get_metrics_general(df_X, df_y, clusters, f"GS-FCM_k{c}_m{m}_eta{eta}", iters)
-        print("---------------------------------------------------------------------------------------")
-        print("Metrics Summary: ")
-        for key, value in metrics.items():
-            print(f"{key}: {value}")
-        print("---------------------------------------------------------------------------------------")
-        if dataset == "grid":
-            plot_clusters(assignments)
+            # Showing the results
+            print("---------------------------------------------------------------------------------------")
+            print("RESULTS: ")
+            print("---------------------------------------------------------------------------------------")
+            print(f"GS_FCM converged in {iters} iterations.")
+            assignments = get_cluster_list(df_X,centers,clusters,c)
+            metrics = get_metrics_general(df_X, df_y, clusters, f"GS-FCM_k{c}_m{m}_eta{eta}", elapsed_time, iters)
+            print("---------------------------------------------------------------------------------------")
+            print("Metrics Summary: ")
+            for key, value in metrics.items():
+                print(f"{key}: {value}")
+            print("---------------------------------------------------------------------------------------")
+            if dataset == "grid":
+                plot_clusters(assignments)
 
 
 
