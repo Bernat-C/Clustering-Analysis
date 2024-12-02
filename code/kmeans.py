@@ -1,7 +1,8 @@
 import numpy as np
 from utils import compute_final_clusters
-from metrics import get_metrics
+from metrics import get_metrics_general
 import pandas as pd
+import time
 
 class CustomKMeans:
     def __init__(self, n_clusters, init=None, distance='euclidean', max_iters=100, tolerance=1e-4):
@@ -90,12 +91,14 @@ def run_all_kmeans(data_X, data_y):
     for k in range(2, 8):
         for dist in ['euclidean', 'manhattan', 'cosine']:
             for i in range(20):
+                start = time.time()
                 random_indices = np.random.choice(len(data_X), k, replace=False)
                 centroids = data_X[random_indices]
                 kmeans = CustomKMeans(n_clusters=k, init=centroids, distance=dist, max_iters=100, tolerance=1e-4)
                 kmeans.fit(data_X)
                 labels_pred = kmeans.predict(data_X)
-                results_kmeans = get_metrics(data_X, data_y, labels_pred, k, dist)
+                execution_time = time.time()-start
+                results_kmeans = get_metrics_general(data_X, data_y, labels_pred, f"kmeans_k{k}_distance-{dist}", execution_time)
                 results.append(results_kmeans)
 
     # Convert to DataFrame

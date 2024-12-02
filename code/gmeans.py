@@ -4,8 +4,9 @@ from kmeans import CustomKMeans
 from utils import compute_final_clusters
 from sklearn.decomposition import PCA
 import pandas as pd
-from metrics import get_metrics
+from metrics import get_metrics_general
 from scipy.stats import anderson
+import time
 
 
 class GMeans:
@@ -122,10 +123,12 @@ def run_all_gmeans(data_X, data_y):
     data_y = np.array(data_y)
     for k in range(2, 8):
         for dist in ['euclidean', 'manhattan', 'cosine']:
+            start = time.time()
             kmeans = GMeans(max_clusters=k,distance=dist)
             kmeans.fit(data_X)
             labels_pred = kmeans.predict(data_X)
-            results_kmeans = get_metrics(data_X, data_y, labels_pred, k, dist)
+            execution_time = time.time()-start
+            results_kmeans = get_metrics_general(data_X, data_y, labels_pred, f"gmeans_k{k}_distance-{dist}", execution_time)
             results.append(results_kmeans)
 
     # Convert to DataFrame
