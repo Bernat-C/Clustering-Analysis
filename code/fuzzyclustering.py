@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from metrics import get_metrics_general
+from metrics import get_metrics_general, get_metrics_fuzzy, xie_beni
 
 
 def update_centers(data, member_matrix, m):
@@ -163,21 +163,29 @@ def gs_fcm(data, n_clusters, m=2, max_iter=1000, tolerance=1e-5, suppress=False,
 
         prev_centers = centers.copy()
 
-    return defuzzyfy(member_matrix), n_iters, centers
+    return member_matrix, n_iters, centers
 
 def run_all_gs_fcm(data_X, data_y, dataset=""):
+    """
+    Run all grid search evaluations for fuzzy c-means clustering.
+    """
     results = []
     for k in range(2,12): # Between 2 and 11
-        for m in [1.05, 1.5, 1.75, 2, 2.5, 3]: # 1 < m
-            eta_bar = tqdm([0.1, 0.3, 0.5, 0.7, 0.9], desc="", position=0, leave=False)
+        for m in [1.05, 1.5, 1.75, 2]: # 1 < m < 2
+            eta_bar = tqdm([0.1, 0.5, 0.9], desc="", position=0, leave=False)
             for eta in eta_bar: # 0 < eta < 1
-                eta_bar.set_description(f"Processing DS={dataset} k={k}, m={m:.2f}, eta={eta:.1f}")
-                start_time = time.time()
-                clusters, n_iterations, _ = gs_fcm(data_X, k, m=m, suppress=True, generalized=True, eta=eta)
-                end_time = time.time()
-                elapsed_time = end_time - start_time
-                results_kmeans = get_metrics_general(data_X, data_y, clusters, f"GS-FCM_k{k}_m{m}_eta{eta}", elapsed_time, n_iterations)
-                results.append(results_kmeans)
+                best_results = {"Xie-Beni": np.Inf}
+                for _ in range(10):
+                    eta_bar.set_description(f"Processing DS={dataset} k={k}, m={m:.2f}, eta={eta:.1f}")
+                    start_time = time.time()
+                    u, n_iterations, centers = gs_fcm(data_X, k, m=m, suppress=True, generalized=True, eta=eta)
+                    end_time = time.time()
+                    clusters = defuzzyfy(u) # Get final clusters
+                    elapsed_time = end_time - start_time
+                    temp_results = get_metrics_fuzzy(data_X, data_y, clusters, f"GS-FCM_k{k}_m{m}_eta{eta}", elapsed_time, n_iterations,u,centers,m)
+                    if temp_results["Xie-Beni"] < best_results["Xie-Beni"]: # In xie_beni smaller is better
+                        best_results = temp_results
+                results.append(best_results)
 
     # Convert to DataFrame
     results = pd.DataFrame(results)
