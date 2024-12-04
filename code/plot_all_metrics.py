@@ -174,7 +174,7 @@ def plot_3x3_spectral(model, datasets, metrics, method):
 
             # Show legend only on the first row and last column
             if row_idx == 0 and col_idx == 2:
-                ax.legend(title="Distance", fontsize=10)
+                ax.legend(title="Affinity", fontsize=10)
 
     # Adjust layout to prevent overlap
     plt.tight_layout()
@@ -190,14 +190,11 @@ def plot_3x3_kmeans(model, datasets, metrics, method):
         for row_idx, metric in enumerate(metrics):  # Change col_idx to row_idx for metrics
             ax = axes[row_idx, col_idx]  # Adjust the indexing to switch rows and columns
             for distance, color, marker in zip(distances, colors, markers):
-                subset = dataset_results[dataset_results['distance'] == distance]
-
-                # Calculate mean rank
-                subset['mean_rank'] = subset[metrics].apply(
-                    lambda row: row.rank(ascending=False).mean() if row.name != "Davies-Bouldin Index" else row.rank().mean(), axis=1
-                )
-                # For each k, find the row with the highest mean rank
-                subset = subset.loc[subset.groupby('k')['mean_rank'].idxmax()]
+                result = dataset_results[dataset_results['distance'] == distance]
+                subset = pd.DataFrame()
+                for k in result['k'].unique():
+                    sub = rank_and_sort(result[result['k']==k],metrics=["Davies-Bouldin Index","Calinski","Silhouette Coefficient"],n=3)
+                    subset = pd.concat((subset, sub.head(1)))
 
                 ax.scatter(subset['k'], subset[metric], color=color, marker=marker, label=distance, alpha=0.7)
                 ax.plot(subset['k'], subset[metric], color=color, alpha=0.7)
@@ -232,7 +229,7 @@ def plot_3x3_kmeans(model, datasets, metrics, method):
     plt.tight_layout()
     plt.show()
 
-models = ['spectral']
+models = ['spectral', 'gmeans', 'spectral']
 
 def plot_all():
     # Main execution loop
