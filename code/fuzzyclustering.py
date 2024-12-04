@@ -170,7 +170,7 @@ def run_all_gs_fcm(data_X, data_y, dataset=""):
     Run all grid search evaluations for fuzzy c-means clustering.
     """
     results = []
-    for k in range(2,12): # Between 2 and 11
+    for k in range(12,13): # Between 2 and 12
         for m in [1.05, 1.5, 1.75, 2]: # 1 < m < 2
             eta_bar = tqdm([0.1, 0.5, 0.9], desc="", position=0, leave=False)
             for eta in eta_bar: # 0 < eta < 1
