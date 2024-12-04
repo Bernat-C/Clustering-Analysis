@@ -22,8 +22,7 @@ def preprocess_results(filepath, method):
     if method == 'kmeans':
         results['k'] = results['Method'].str.split('_').str[1].str.split('k').str[1].astype(int)
         results['distance'] = results['Method'].str.split('_').str[2].str.split('distance-').str[1]
-    elif method == 'spectral':
-        print(9)
+
     return results
 
 # Function to plot a single row (1x3) for KMeans
@@ -124,7 +123,7 @@ def plot_3x3_fuzzy(model, datasets, metrics):
     plt.show()
 
 # Function to plot a grid (3x3) for GMeans
-def plot_3x3(model, datasets, metrics, method):
+def plot_3x3_kmeans(model, datasets, metrics, method):
     fig, axes = plt.subplots(3, 3, figsize=(12, 8), sharex=True)
 
     for col_idx, dataset in enumerate(datasets):  # Change row_idx to col_idx for datasets
@@ -133,22 +132,14 @@ def plot_3x3(model, datasets, metrics, method):
         for row_idx, metric in enumerate(metrics):  # Change col_idx to row_idx for metrics
             ax = axes[row_idx, col_idx]  # Adjust the indexing to switch rows and columns
             for distance, color, marker in zip(distances, colors, markers):
-                if method == 'kmeans':
-                    subset = dataset_results[dataset_results['distance'] == distance]
+                subset = dataset_results[dataset_results['distance'] == distance]
 
-                    # Calculate mean rank
-                    subset['mean_rank'] = subset[metrics].apply(
-                        lambda row: row.rank(ascending=False).mean() if row.name != "Davies-Bouldin Index" else row.rank().mean(), axis=1
-                    )
-                    # For each k, find the row with the highest mean rank
-                    subset = subset.loc[subset.groupby('k')['mean_rank'].idxmax()]
-
-                elif method == 'spectral':
-                    dataset_results_ranked = rank_and_sort(dataset_results, ["Davies-Bouldin Index", "Silhouette Coefficient"])
-
-                    subset = dataset_results_ranked[dataset_results_ranked[["affinity", "assign_labels", "n_neighbors", "eigen_solver"]]
-                   .eq(dataset_results_ranked.loc[0, ["affinity", "assign_labels", "n_neighbors", "eigen_solver"]])
-                   .all(axis=1)]
+                # Calculate mean rank
+                subset['mean_rank'] = subset[metrics].apply(
+                    lambda row: row.rank(ascending=False).mean() if row.name != "Davies-Bouldin Index" else row.rank().mean(), axis=1
+                )
+                # For each k, find the row with the highest mean rank
+                subset = subset.loc[subset.groupby('k')['mean_rank'].idxmax()]
 
                 ax.scatter(subset['k'], subset[metric], color=color, marker=marker, label=distance, alpha=0.7)
                 ax.plot(subset['k'], subset[metric], color=color, alpha=0.7)
@@ -189,12 +180,12 @@ def plot_all():
     for model in models:
         if model == 'kmeans':
             plot_kmeans(datasets, 'kmeans')
-            plot_3x3(model, datasets, metrics, 'kmeans')
+            plot_3x3_kmeans(model, datasets, metrics, 'kmeans')
         elif model == 'gmeans':
-            plot_3x3(model, datasets, metrics, 'kmeans')
+            plot_3x3_kmeans(model, datasets, metrics, 'kmeans')
         elif model == 'global_fastkmeans':
-            plot_3x3(model, datasets, metrics, 'kmeans')
+            plot_3x3_kmeans(model, datasets, metrics, 'kmeans')
         elif model == 'spectral':
-            plot_3x3(model, datasets, metrics, 'spectral')
+            plot_3x3(model, datasets, metrics)
 
 plot_all()
