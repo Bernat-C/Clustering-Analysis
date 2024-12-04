@@ -5,6 +5,8 @@ from sklearn.metrics import adjusted_rand_score, silhouette_score
 from sklearn.metrics import davies_bouldin_score, calinski_harabasz_score
 
 
+# GENERAL METRICS
+
 def adjusted_rand_index(labels_true, labels_pred):
     return adjusted_rand_score(labels_true, labels_pred)
 
@@ -28,6 +30,78 @@ def f_measure(labels_true, labels_pred):
 
 def calinski_harabasz_index(data, labels):
     return calinski_harabasz_score(data, labels)
+
+
+# SPECIFIC METRICS
+
+def xie_beni(U, X, C, m):
+    """
+    Compute the Xie-Beni index for fuzzy clustering.
+
+    Parameters:
+    U (numpy array): The membership matrix of shape (n_clusters, n_samples).
+    X (numpy array): The data points of shape (n_samples, n_features).
+    C (numpy array): Centers of the clusters (n_clusters, n_features).
+    m (int): Fuzzy clustering parameter.
+    """
+    c, n = U.shape
+
+    # Numerator (sum of squared distances to the centers)
+    numerator = 0
+    for i in range(n):
+        for k in range(c):
+            dist = np.linalg.norm(X[i] - C[k]) ** 2
+            numerator += (U[k,i] ** m) * dist
+
+    # Denominator (minimum squared distance between cluster centers)
+    min_distance = float('inf')
+    for k in range(c):
+        for j in range(k + 1, c):
+            dist = np.linalg.norm(C[k] - C[j]) ** 2
+            min_distance = min(min_distance, dist)
+
+    xie_beni_index = numerator / (n * min_distance)
+
+    return xie_beni_index
+
+# FUNCTIONS TO GET DICTIONARIES WITH ALL METRICS
+
+def get_metrics_fuzzy(X, labels_true, labels_pred, method, time, n_iterations,u,c,m):
+    """
+    Calculate performance metrics for FC.
+
+    X (numpy.ndarray): The dataset of shape (n_samples, n_features).
+    labels_true (numpy.ndarray): Ground truth labels of shape (n_samples,).
+    labels_pred (numpy.ndarray): Predicted labels of shape (n_samples,).
+    method (str)
+    time (float)
+    n_iterations (int)
+    u (numpy array): The membership matrix of shape (n_clusters, n_samples).
+    c (numpy array): Centers of the clusters (n_clusters, n_features).
+    m (float): The fuzzification parameter.
+    """
+    # Compute metrics
+    dbi = davies_bouldin_index(X, labels_pred)
+    silhouette = silhouette_coefficient(X, labels_pred)
+
+    ari = adjusted_rand_index(labels_true, labels_pred)
+    purity = purity_score(labels_true, labels_pred)
+    fmeasure = f_measure(labels_true, labels_pred)
+
+    # Append results
+    results = {
+        "Method": method,
+        "ARI": ari,
+        "Purity": purity,
+        "F-Measure": fmeasure,
+        "Davies-Bouldin Index": dbi,
+        "Silhouette Coefficient": silhouette,
+        "Xie-Beni": xie_beni(u,np.array(X),c,m),
+        "Solving Time": time,
+        "Iterations": n_iterations
+    }
+    return results
+
 
 def get_metrics_general(X, labels_true, labels_pred, method, time, n_iterations = None):
     # Compute metrics
