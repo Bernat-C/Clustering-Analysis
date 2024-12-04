@@ -88,7 +88,7 @@ def run_all_kmeans(data_X, data_y):
     results = []
     data_X = np.array(data_X)
     data_y = np.array(data_y)
-    for k in range(2, 8):
+    for k in range(2, 13):
         for dist in ['euclidean', 'manhattan', 'cosine']:
             for i in range(20):
                 start = time.time()

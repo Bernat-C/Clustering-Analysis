@@ -2,7 +2,8 @@
 import numpy as np
 import pandas as pd
 from sklearn.metrics import adjusted_rand_score, silhouette_score
-from sklearn.metrics import davies_bouldin_score
+from sklearn.metrics import davies_bouldin_score, calinski_harabasz_score
+
 
 def adjusted_rand_index(labels_true, labels_pred):
     return adjusted_rand_score(labels_true, labels_pred)
@@ -25,10 +26,14 @@ def f_measure(labels_true, labels_pred):
     recall = contingency_matrix.max(axis=1).sum() / len(labels_true)
     return 2 * (precision * recall) / (precision + recall)
 
-def get_metrics_general(X, labels_true, labels_pred, method, time, n_iterations):
+def calinski_harabasz_index(data, labels):
+    return calinski_harabasz_score(data, labels)
+
+def get_metrics_general(X, labels_true, labels_pred, method, time, n_iterations = None):
     # Compute metrics
     dbi = davies_bouldin_index(X, labels_pred)
     silhouette = silhouette_coefficient(X, labels_pred)
+    calinski = calinski_harabasz_index(X, labels_pred)
 
     ari = adjusted_rand_index(labels_true, labels_pred)
     purity = purity_score(labels_true, labels_pred)
@@ -42,8 +47,9 @@ def get_metrics_general(X, labels_true, labels_pred, method, time, n_iterations)
         "F-Measure": fmeasure,
         "Davies-Bouldin Index": dbi,
         "Silhouette Coefficient": silhouette,
+        "Calinski": calinski,
         "Solving Time": time,
-        "Iterations": n_iterations
+        "Iterations": n_iterations if n_iterations else np.NaN
     }
     return results
 

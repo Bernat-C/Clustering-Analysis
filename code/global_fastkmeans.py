@@ -124,14 +124,15 @@ def run_all_global_kmeans(data_X, data_y):
     results = []
     data_X = np.array(data_X)
     data_y = np.array(data_y)
-    for k in range(2, 8):
+    for k in range(2, 13):
         for dist in ['euclidean', 'manhattan', 'cosine']:
             start = time.time()
             kmeans = FastGlobalKMeans(max_clusters=k,distance=dist)
             kmeans.fit(data_X)
             labels_pred = kmeans.predict(data_X)
             execution_time = time.time()-start
-            results_kmeans = get_metrics_general(data_X, data_y, labels_pred, f"GlobalKmeans_k{k}_distance-{dist}", execution_time)
+            k_found = len(np.unique(labels_pred))
+            results_kmeans = get_metrics_general(data_X, data_y, labels_pred, f"GlobalKmeans_k{k}_distance-{dist}_kfound{k_found}", execution_time)
             results.append(results_kmeans)
 
     # Convert to DataFrame

@@ -60,6 +60,9 @@ data = np.vstack([c['points'] for c in clusters.values()])
 
 reduce_and_plot_with_umap(data, labels)
 plot_confusion(y, labels)
+# Integrate SOM into your pipeline
+feature_names = X.columns.tolist()
+
 
 path = './datasets_processed'
 file = os.path.join(path,'sick.csv')
