@@ -223,7 +223,7 @@ def plot_confusion(targets, labels):
     disp.plot(cmap='Blues')
     plt.show()
 
-def rank_and_sort(df,metrics=["ARI","Davies-Bouldin Index","Calinski","Silhouette Coefficient"],n=3):
+def rank_and_sort(df,metrics=["Davies-Bouldin Index","Calinski","Silhouette Coefficient"],n=3):
     """
     Rank a solution df by its columns, getting the first n of every metric
     :param df:
