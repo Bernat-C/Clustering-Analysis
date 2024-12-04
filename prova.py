@@ -25,6 +25,14 @@ def preprocess_results(filepath, method):
         results['n_neighbors'] = results['Method'].str.split('_').str[3].str.split('n-neighbors').str[1].astype(int)
         results['assign_labels'] = results['Method'].str.split('_').str[4].str.split('assign-labels').str[1]
         results['eigen_solver'] = results['Method'].str.split('_').str[5].str.split('eigen-solver').str[1]
+    elif method == 'optics':
+        results['k'] = results['Method'].str.split('_').str[1].str.split('k').str[1].astype(int)
+        results['distance'] = results['Method'].str.split('_').str[2].str.split('distance-').str[1]
+        results['algorithm'] = results['Method'].str.split('_').str[3].str.split('algorithm').str[1]
+        results['xi'] = results['Method'].str.split('_').str[4].str.split('xi').str[1].astype(float)
+        results['min'] = results['Method'].str.split('_').str[5].str.split('min').str[1].astype(float)
+        
+
     return results
 
 def rank_and_sort(df,metrics=["Davies-Bouldin Index","Calinski","Silhouette Coefficient"],n=3):
@@ -71,32 +79,13 @@ def rank_and_sort(df,metrics=["Davies-Bouldin Index","Calinski","Silhouette Coef
 
     return rankings
 
-distances = ['euclidean', 'manhattan', 'cosine']
-
-model = 'kmeans'
-dataset = 'sick'
-
+datasets = ['grid', 'sick', 'vowel']
 
 metrics = ["Davies-Bouldin Index", "Silhouette Coefficient", "Calinski"]
 
-for distance in distances:
-    result = preprocess_results(f'./output/{model}_{dataset}.csv', 'kmeans')
-    
-    result = result[result['distance'] == distance]
-    subset = pd.DataFrame()
-    for k in result['k'].unique():
-        
-        sub = rank_and_sort(result[result['k']==k],metrics=["Davies-Bouldin Index","Calinski","Silhouette Coefficient"],n=3)
-        subset = pd.concat((subset, sub.head(1)))
-
-    # For each k, find the row with the highest mean rank
-    
-    """result = rank_and_sort(subset, metrics=["Davies-Bouldin Index","Silhouette Coefficient", "Calinski"],n=3)
-    print(result)
-    # Calculate mean rank
-    subset['mean_rank'] = subset[metrics].apply(
-        lambda row: row.rank(ascending=False).mean() if row.name != "Davies-Bouldin Index" else row.rank().mean(), axis=1
-    )
-    # For each k, find the row with the highest mean rank
-    subset = subset.loc[subset.groupby('k')['mean_rank'].idxmax()]"""
-    break
+for dataset in datasets:
+    dataset_results = preprocess_results(f'./output/{model}_{dataset}.csv', 'optics')
+    print(dataset_results['min'])
+    dataset_results = dataset_results.dropna()
+    subset = rank_and_sort(dataset_results,metrics=["Davies-Bouldin Index","Calinski","Silhouette Coefficient"],n=3)
+    print('i')
