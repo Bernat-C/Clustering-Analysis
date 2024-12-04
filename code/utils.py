@@ -263,14 +263,4 @@ def rank_and_sort(df,metrics=["ARI","Davies-Bouldin Index","Calinski","Silhouett
     # Sort by mean rank
     rankings = rankings.sort_values("Mean_Rank").reset_index(drop=True)
 
-    rankings[['Model', 'k', 'm', 'eta']] = rankings['Method'].str.split('_', expand=True)
-
-    # Further process to clean up the extracted columns
-    rankings['k'] = rankings['k'].str.extract('(\d+)', expand=False)  # Extract just the number for k
-    rankings['m'] = rankings['m'].str.extract('(\d+\.\d+|\d+)', expand=False)  # Extract number for m
-    rankings['eta'] = rankings['eta'].str.extract('(\d+\.\d+|\d+)', expand=False)  # Extract number for eta
-
-    rankings = rankings.drop(columns=['Method'])
-    rankings = rankings.sort_values(by='Xie-Beni', ascending=True)
-
     return rankings
