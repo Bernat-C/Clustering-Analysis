@@ -222,3 +222,45 @@ def plot_confusion(targets, labels):
     disp = ConfusionMatrixDisplay(confusion_matrix=cm)
     disp.plot(cmap='Blues')
     plt.show()
+
+def rank_and_sort(df,metrics=["ARI","Davies-Bouldin Index","Calinski","Silhouette Coefficient"],n=3):
+    """
+    Rank a solution df by its columns, getting the first n of every metric
+    :param df:
+    :return:
+    """
+
+    # Get the top 3 rows for each metric
+    top_rows = pd.DataFrame()
+    for metric in metrics:
+        if metric == "Davies-Bouldin Index":
+            # For Davies-Bouldin Index, lower is better, so sort ascending
+            top_rows = pd.concat([top_rows, df.nsmallest(n, metric)])
+        else:
+            # For all other metrics, higher is better
+            top_rows = pd.concat([top_rows, df.nlargest(n, metric)])
+
+    # Drop duplicate rows
+    top_rows = top_rows.drop_duplicates()
+
+    rankings = top_rows.copy()
+
+    # Rank the rows based on all metrics
+    for metric in metrics:
+        if metric == "Davies-Bouldin Index":
+            # Rank ascending for Davies-Bouldin Index
+            rankings[f"{metric}_Rank"] = rankings[metric].rank(ascending=True)
+        if metric == "Xie-Beni":
+            rankings[f"{metric}_Rank"] = rankings[metric].rank(ascending=True)
+        else:
+            # Rank descending for other metrics
+            rankings[f"{metric}_Rank"] = rankings[metric].rank(ascending=False)
+
+    # Calculate the mean rank across all metrics
+    ranking_columns = [f"{metric}_Rank" for metric in metrics]
+    rankings["Mean_Rank"] = rankings[ranking_columns].mean(axis=1)
+
+    # Sort by mean rank
+    rankings = rankings.sort_values("Mean_Rank").reset_index(drop=True)
+
+    return rankings
