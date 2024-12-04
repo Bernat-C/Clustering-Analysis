@@ -18,7 +18,7 @@ colors = ['#FF6347', '#1f77b4', '#2ca02c', "#FFF200"]
 markers = ['o', 's', ".", '^']
 
 # Function to preprocess results
-def preprocess_results(filepath, method):
+def preprocess_results(filepath, method=None):
     results = pd.read_csv(filepath)
     if method == 'kmeans':
         results['k'] = results['Method'].str.split('_').str[1].str.split('k').str[1].astype(int)
@@ -86,17 +86,11 @@ def plot_3x3_fuzzy(model, datasets, metrics):
                 dataset_results['k'] = dataset_results['k'].str.extract('(\d+)', expand=False).astype(int)  # Extract just the number for k
                 dataset_results['m'] = dataset_results['m'].str.extract('(\d+\.\d+|\d+)', expand=False).astype(float)  # Extract number for m
                 dataset_results['eta'] = dataset_results['eta'].str.extract('(\d+\.\d+|\d+)', expand=False).astype(float)  # Extract number for eta
-                subset = dataset_results[dataset_results['m'] == m]
-
-                subset = subset.copy()  # Create a full copy to ensure safe modifications
-
-                subset['mean_rank'] = subset[metrics].apply(
-                    lambda row: row.rank(ascending=False).mean()
-                    if row.name != "Davies-Bouldin Index" and row.name != "Xie-Beni"
-                    else row.rank().mean(), axis=1
-                )
-                # For each k, find the row with the highest mean rank
-                subset = subset.loc[subset.groupby('k')['mean_rank'].idxmax()]
+                result = dataset_results[dataset_results['m'] == m]
+                subset = pd.DataFrame()
+                for k in result['k'].unique():
+                    sub = rank_and_sort(result[result['k']==k],metrics=["Davies-Bouldin Index","Calinski","Silhouette Coefficient", "Xie-Beni"],n=3)
+                    subset = pd.concat((subset, sub.head(1)))
 
                 ax.scatter(subset['k'], subset[metric], color=color, marker=marker, label=m, alpha=0.7)
                 ax.plot(subset['k'], subset[metric], color=color, alpha=0.7)
@@ -229,7 +223,7 @@ def plot_3x3_kmeans(model, datasets, metrics, method):
     plt.tight_layout()
     plt.show()
 
-models = ['spectral', 'gmeans', 'spectral']
+models = ['fuzzyclustering']
 
 def plot_all():
     # Main execution loop
@@ -243,5 +237,7 @@ def plot_all():
             plot_3x3_kmeans(model, datasets, metrics, 'kmeans')
         elif model == 'spectral':
             plot_3x3_spectral(model, datasets, metrics, 'spectral')
+        elif model == 'fuzzyclustering':
+            plot_3x3_fuzzy(model, datasets, ["Davies-Bouldin Index", "Silhouette Coefficient", "Calinski", "Xie-Beni"])
 
 plot_all()
