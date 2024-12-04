@@ -60,6 +60,9 @@ def xie_beni(U, X, C, m):
             dist = np.linalg.norm(C[k] - C[j]) ** 2
             min_distance = min(min_distance, dist)
 
+    if min_distance==0: # Avoid division by 0
+        min_distance = 0.001
+
     xie_beni_index = numerator / (n * min_distance)
 
     return xie_beni_index
@@ -83,6 +86,7 @@ def get_metrics_fuzzy(X, labels_true, labels_pred, method, time, n_iterations,u,
     # Compute metrics
     dbi = davies_bouldin_index(X, labels_pred)
     silhouette = silhouette_coefficient(X, labels_pred)
+    calinski = calinski_harabasz_index(X, labels_pred)
 
     ari = adjusted_rand_index(labels_true, labels_pred)
     purity = purity_score(labels_true, labels_pred)
@@ -96,6 +100,7 @@ def get_metrics_fuzzy(X, labels_true, labels_pred, method, time, n_iterations,u,
         "F-Measure": fmeasure,
         "Davies-Bouldin Index": dbi,
         "Silhouette Coefficient": silhouette,
+        "Calinski": calinski,
         "Xie-Beni": xie_beni(u,np.array(X),c,m),
         "Solving Time": time,
         "Iterations": n_iterations

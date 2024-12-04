@@ -4,7 +4,10 @@ from matplotlib import pyplot as plt
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import LabelEncoder
-from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+
+import umap.umap_ as umap
 
 
 import pandas as pd
@@ -181,3 +184,83 @@ def plot_spectral(data, labels):
     plt.legend(handles, legend_labels, title="Clusters")
 
     plt.show()
+
+def reduce_and_plot_with_umap(data, labels, n_neighbors=15, min_dist=0.1, n_components=2, metric='euclidean'):
+    """
+    Reduces dimensionality of the dataset with UMAP and plots the clusters.
+    :param data: Original high-dimensional data.
+    :param labels: Cluster labels corresponding to each data point.
+    :param n_neighbors: UMAP parameter for balancing local and global structure.
+    :param min_dist: UMAP parameter controlling the tightness of embedding.
+    :param n_components: Number of dimensions to reduce to (default is 2 for visualization).
+    :param metric: Distance metric for UMAP.
+    """
+    # Reduce dimensionality using UMAP
+    reducer = umap.UMAP(n_neighbors=n_neighbors, min_dist=min_dist, n_components=n_components, metric=metric)
+    reduced_data = reducer.fit_transform(data)
+
+    # Plot clusters in reduced space
+    plt.figure(figsize=(8, 6))
+    for cluster_id in np.unique(labels):
+        cluster_points = reduced_data[labels == cluster_id]
+        plt.scatter(cluster_points[:, 0], cluster_points[:, 1], label=f'Cluster {cluster_id}', alpha=0.6, s=30)
+    
+    # Labels and title
+    plt.xlabel('UMAP Dimension 1')
+    plt.ylabel('UMAP Dimension 2')
+    plt.title('Clusters Visualized in 2D Space (UMAP)')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+
+def plot_confusion(targets, labels):
+    # Compute confusion matrix
+    cm = confusion_matrix(targets, labels)
+
+    # Plot confusion matrix
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+    disp.plot(cmap='Blues')
+    plt.show()
+
+def rank_and_sort(df,metrics=["Davies-Bouldin Index","Calinski","Silhouette Coefficient"],n=3):
+    """
+    Rank a solution df by its columns, getting the first n of every metric
+    :param df:
+    :return:
+    """
+
+    # Get the top 3 rows for each metric
+    top_rows = pd.DataFrame()
+    for metric in metrics:
+        if metric == "Davies-Bouldin Index":
+            # For Davies-Bouldin Index, lower is better, so sort ascending
+            top_rows = pd.concat([top_rows, df.nsmallest(n, metric)])
+        else:
+            # For all other metrics, higher is better
+            top_rows = pd.concat([top_rows, df.nlargest(n, metric)])
+
+    # Drop duplicate rows
+    top_rows = top_rows.drop_duplicates()
+
+    rankings = top_rows.copy()
+
+    # Rank the rows based on all metrics
+    for metric in metrics:
+        if metric == "Davies-Bouldin Index":
+            # Rank ascending for Davies-Bouldin Index
+            rankings[f"{metric}_Rank"] = rankings[metric].rank(ascending=True)
+        if metric == "Xie-Beni":
+            rankings[f"{metric}_Rank"] = rankings[metric].rank(ascending=True)
+        else:
+            # Rank descending for other metrics
+            rankings[f"{metric}_Rank"] = rankings[metric].rank(ascending=False)
+
+    # Calculate the mean rank across all metrics
+    ranking_columns = [f"{metric}_Rank" for metric in metrics]
+    rankings["Mean_Rank"] = rankings[ranking_columns].mean(axis=1)
+
+    # Sort by mean rank
+    rankings = rankings.sort_values("Mean_Rank").reset_index(drop=True)
+
+    return rankings
