@@ -153,3 +153,40 @@ def get_metrics(X, y, labels_pred, k, dist):
         "Silhouette Coefficient": silhouette
     }
     return results
+
+
+def get_metrics_optics(X, labels_true, labels_pred, method, t, n_iterations=None):
+    if len(np.unique(labels_pred)) > 1:
+        # Compute metrics
+        dbi = davies_bouldin_index(X, labels_pred)
+        silhouette = silhouette_coefficient(X, labels_pred)
+        calinski = calinski_harabasz_index(X, labels_pred)
+
+        ari = adjusted_rand_index(labels_true, labels_pred)
+        purity = purity_score(labels_true, labels_pred)
+        fmeasure = f_measure(labels_true, labels_pred)
+
+        # Append results
+        results = {
+            "Method": method,
+            "ARI": ari,
+            "Purity": purity,
+            "F-Measure": fmeasure,
+            "Davies-Bouldin Index": dbi,
+            "Silhouette Coefficient": silhouette,
+            "Calinski": calinski,
+            "Solving Time": t,
+            "Iterations": n_iterations if n_iterations else np.NaN
+        }
+    else:
+        results = {
+            "Method": method,
+            "ARI": np.nan,
+            "Purity": np.nan,
+            "F-Measure": np.nan,
+            "Davies-Bouldin Index": np.nan,
+            "Silhouette Coefficient": np.nan,
+            "Calinski": np.nan,
+            "Solving Time": t,
+            "Iterations": n_iterations if n_iterations else np.NaN}
+    return results
