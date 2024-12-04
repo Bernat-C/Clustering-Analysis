@@ -36,7 +36,7 @@ def runAllFuzzyClustering(datasets):
     for dataset in datasets:
         df_X, y = load_ds(dataset)
         results = run_all_gs_fcm(df_X, y, dataset=dataset)
-        results.to_csv(f"../output/fuzzyclustering_{dataset}.csv")
+        results.to_csv(f"./output/fuzzyclustering_noov_{dataset}.csv")
 
 def main():
     print("Welcome to our Clustering application.")
