@@ -4,7 +4,7 @@ import numpy as np
 import os
 
 from gmeans import run_gmeans
-from utils import reduce_and_plot_with_umap, plot_confusion
+from utils import reduce_and_plot_with_umap, reduce_and_plot_with_pca, plot_confusion, plot_clusters
 
 
 
@@ -19,7 +19,7 @@ clusters = run_gmeans(np.array(X), max_clusters=k, distance=distance)
 labels = np.concatenate([np.full(len(c['points']), cluster_id) for cluster_id, c in clusters.items()])
 data = np.vstack([c['points'] for c in clusters.values()])
 
-reduce_and_plot_with_umap(data, labels)
+plot_clusters(clusters)
 plot_confusion(y, labels)
 # Integrate SOM into your pipeline
 feature_names = X.columns.tolist()
@@ -37,6 +37,7 @@ labels = np.concatenate([np.full(len(c['points']), cluster_id) for cluster_id, c
 data = np.vstack([c['points'] for c in clusters.values()])
 
 reduce_and_plot_with_umap(data, labels)
+reduce_and_plot_with_pca(data, labels)
 plot_confusion(y, labels)
 
 path = './datasets_processed'
@@ -51,5 +52,6 @@ labels = np.concatenate([np.full(len(c['points']), cluster_id) for cluster_id, c
 data = np.vstack([c['points'] for c in clusters.values()])
 
 reduce_and_plot_with_umap(data, labels)
+reduce_and_plot_with_pca(data, labels)
 plot_confusion(y, labels)
 

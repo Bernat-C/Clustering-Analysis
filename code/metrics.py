@@ -128,7 +128,7 @@ def get_metrics_general(X, labels_true, labels_pred, method, time, n_iterations 
         "Silhouette Coefficient": silhouette,
         "Calinski": calinski,
         "Solving Time": time,
-        "Iterations": n_iterations if n_iterations else np.NaN
+        "Iterations": n_iterations if n_iterations else np.nan
     }
     return results
 

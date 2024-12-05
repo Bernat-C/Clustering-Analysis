@@ -6,6 +6,8 @@ from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import LabelEncoder
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from sklearn.decomposition import PCA
+
 
 import umap.umap_ as umap
 
@@ -209,6 +211,31 @@ def reduce_and_plot_with_umap(data, labels, n_neighbors=15, min_dist=0.1, n_comp
     plt.xlabel('UMAP Dimension 1')
     plt.ylabel('UMAP Dimension 2')
     plt.title('Clusters Visualized in 2D Space (UMAP)')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+def reduce_and_plot_with_pca(data, labels, n_components=2):
+    """
+    Reduces dimensionality of the dataset with PCA and plots the clusters.
+    :param data: Original high-dimensional data.
+    :param labels: Cluster labels corresponding to each data point.
+    :param n_components: Number of dimensions to reduce to (default is 2 for visualization).
+    """
+    # Reduce dimensionality using PCA
+    pca = PCA(n_components=n_components)
+    reduced_data = pca.fit_transform(data)
+
+    # Plot clusters in reduced space
+    plt.figure(figsize=(8, 6))
+    for cluster_id in np.unique(labels):
+        cluster_points = reduced_data[labels == cluster_id]
+        plt.scatter(cluster_points[:, 0], cluster_points[:, 1], label=f'Cluster {cluster_id}', alpha=0.6, s=30)
+    
+    # Labels and title
+    plt.xlabel('PCA Dimension 1')
+    plt.ylabel('PCA Dimension 2')
+    plt.title('Clusters Visualized in 2D Space (PCA)')
     plt.legend()
     plt.grid(True)
     plt.show()
