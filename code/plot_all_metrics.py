@@ -18,29 +18,33 @@ colors = ['#FF6347', '#1f77b4', '#2ca02c', "#FFF200"]
 markers = ['o', 's', ".", '^']
 
 # Function to preprocess results
-def preprocess_results(filepath, method):
+def preprocess_results(filepath, model):
     results = pd.read_csv(filepath)
-    if method == 'kmeans':
+    if model == 'kmeans' or model == 'gmeans':
         results['k'] = results['Method'].str.split('_').str[1].str.split('k').str[1].astype(int)
         results['distance'] = results['Method'].str.split('_').str[2].str.split('distance-').str[1]
-    elif method == 'spectral':
+    elif model == 'spectral':
         results['k'] = results['Method'].str.split('_').str[1].str.split('k').str[1].astype(int)
         results['affinity'] = results['Method'].str.split('_').str[2].str.split('affinity').str[1]
         results['n_neighbors'] = results['Method'].str.split('_').str[3].str.split('n-neighbors').str[1].astype(int)
         results['assign_labels'] = results['Method'].str.split('_').str[4].str.split('assign-labels').str[1]
         results['eigen_solver'] = results['Method'].str.split('_').str[5].str.split('eigen-solver').str[1]
+    elif model == 'GlobalFastKmeans':
+        results['k'] = results['Method'].str.split('_').str[1].str.split('k').str[1].astype(int)
+        results['distance'] = results['Method'].str.split('_').str[2].str.split('distance-').str[1]
+        results['kfound'] = results['Method'].str.split('_').str[2].str.split('kfound-').str[1]
 
 
 
     return results
 
 # Function to plot a single row (1x3) for KMeans
-def plot_kmeans(datasets, method):
+def plot_kmeans(datasets, model):
     fig, axes = plt.subplots(1, 3, figsize=(9, 3), sharey=True)  # 1x3 plot with shared y-axis
     sns.set(style="whitegrid", palette="muted", font_scale=1.2)
 
     for ax, dataset in zip(axes, datasets):
-        results = preprocess_results(f'./output/kmeans_{dataset}.csv', method)
+        results = preprocess_results(f'./output/kmeans_{dataset}.csv', model)
 
         for distance, color in zip(distances, colors):
             results_dist = results[results['distance'] == distance]
@@ -64,6 +68,7 @@ def plot_kmeans(datasets, method):
 
         # Add grid
         ax.grid(axis="y", linestyle="--", alpha=0.5)
+        ax.grid(axis="x", linestyle="--", alpha=0.5)
 
 
     # Adjust layout to prevent overlap and ensure proper spacing
@@ -132,11 +137,12 @@ def plot_3x3_fuzzy(model, datasets, metrics):
     plt.show()
 
 # Function to plot a grid (3x3) for GMeans
-def plot_3x3_spectral(model, datasets, metrics, method):
+def plot_3x3_spectral(model, datasets, metrics):
+    sns.set(style="whitegrid", palette="muted", font_scale=1.2)
     fig, axes = plt.subplots(3, 3, figsize=(12, 8), sharex=True)
 
     for col_idx, dataset in enumerate(datasets):  # Change row_idx to col_idx for datasets
-        dataset_results = preprocess_results(f'{path}/{model}_{dataset}.csv', method)
+        dataset_results = preprocess_results(f'{path}/{model}_{dataset}.csv', model)
 
         for row_idx, metric in enumerate(metrics):  # Change col_idx to row_idx for metrics
             ax = axes[row_idx, col_idx]  # Adjust the indexing to switch rows and columns
@@ -163,6 +169,7 @@ def plot_3x3_spectral(model, datasets, metrics, method):
 
             # Add grid
             ax.grid(axis="y", linestyle="--", alpha=0.5)
+            ax.grid(axis="x", linestyle="--", alpha=0.5)
 
             # Set titles, axis names, and labels
             if row_idx == 0:
@@ -181,11 +188,13 @@ def plot_3x3_spectral(model, datasets, metrics, method):
     plt.show()
 
 
-def plot_3x3_kmeans(model, datasets, metrics, method):
+def plot_3x3_kmeans(model, datasets, metrics):
+    sns.set(style="whitegrid", palette="muted", font_scale=1.2)
+
     fig, axes = plt.subplots(3, 3, figsize=(12, 8), sharex=True)
 
     for col_idx, dataset in enumerate(datasets):  # Change row_idx to col_idx for datasets
-        dataset_results = preprocess_results(f'{path}/{model}_{dataset}.csv', method)
+        dataset_results = preprocess_results(f'{path}/{model}_{dataset}.csv', model)
 
         for row_idx, metric in enumerate(metrics):  # Change col_idx to row_idx for metrics
             ax = axes[row_idx, col_idx]  # Adjust the indexing to switch rows and columns
@@ -212,6 +221,7 @@ def plot_3x3_kmeans(model, datasets, metrics, method):
 
             # Add grid
             ax.grid(axis="y", linestyle="--", alpha=0.5)
+            ax.grid(axis="x", linestyle="--", alpha=0.5)
 
             # Set titles, axis names, and labels
             if row_idx == 0:
@@ -229,19 +239,19 @@ def plot_3x3_kmeans(model, datasets, metrics, method):
     plt.tight_layout()
     plt.show()
 
-models = ['spectral', 'gmeans', 'spectral']
+models = ['GlobalFastKmeans', 'spectral', 'gmeans', 'spectral']
 
 def plot_all():
     # Main execution loop
     for model in models:
         if model == 'kmeans':
             plot_kmeans(datasets, 'kmeans')
-            plot_3x3_kmeans(model, datasets, metrics, 'kmeans')
+            plot_3x3_kmeans(model, datasets, metrics)
         elif model == 'gmeans':
-            plot_3x3_kmeans(model, datasets, metrics, 'kmeans')
-        elif model == 'global_fastkmeans':
-            plot_3x3_kmeans(model, datasets, metrics, 'kmeans')
+            plot_3x3_kmeans(model, datasets, metrics)
+        elif model == 'GlobalFastKmeans':
+            plot_3x3_kmeans(model, datasets, metrics)
         elif model == 'spectral':
-            plot_3x3_spectral(model, datasets, metrics, 'spectral')
+            plot_3x3_spectral(model, datasets, metrics)
 
 plot_all()

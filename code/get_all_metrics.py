@@ -16,13 +16,13 @@ def get_all_metrics():
         X = df.iloc[:,:-1]
         y = df.iloc[:,-1]
 
-        r = run_all_kmeans(X,y)
+        """r = run_all_kmeans(X,y)
         r.to_csv(f'./output/kmeans_{dataset}.csv')
-        print('i')
+        print('i')"""
         r = run_all_gmeans(X,y)
         r.to_csv(f'./output/gmeans_{dataset}.csv')
-        
-        """print('i')
+        """
+        print('i')
         r = run_all_global_kmeans(X,y)
         r.to_csv(f'./output/GlobalFastKmeans_{dataset}.csv')"""
 
