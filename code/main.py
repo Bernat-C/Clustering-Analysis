@@ -79,19 +79,22 @@ def main():
 
         elif method=="K-Means":
             n_clusters = get_user_choice("Select the number of clusters:", [2,3,4,5,6,7,8,9,10,11,12], is_numeric=True)
-            distance = get_user_choice("Select the distance to use:", ["Euclidian", "Manhattan", "Cosine similarity"])
+            distance = get_user_choice("Select the distance to use:", ["euclidean", "manhattan", "cosine"])
             clusters = run_kmeans(df_X, n_clusters=n_clusters, init=None, distance=distance)
-            plot_clusters(clusters)
+            if dataset == "grid":
+                plot_clusters(clusters)
         elif method=="Global-K-Means":
             max_clusters = get_user_choice("Select the maximum number of clusters:", [2,3,4,5,6,7,8,9,10,11,12], is_numeric=True)
-            distance = get_user_choice("Select the distance to use:", ["Euclidian", "Manhattan", "Cosine similarity"])
+            distance = get_user_choice("Select the distance to use:", ["euclidean", "manhattan", "cosine"])
             clusters = run_global_kmeans(df_X, max_clusters=max_clusters, distance=distance)
-            plot_clusters(clusters)
+            if dataset == "grid":
+                plot_clusters(clusters)
         elif method=="G-Means":
             max_clusters = get_user_choice("Select the maximum number of clusters:", [2,3,4,5,6,7,8,9,10,11,12], is_numeric=True)
-            distance = get_user_choice("Select the distance to use:", ["Euclidian", "Manhattan", "Cosine similarity"])
+            distance = get_user_choice("Select the distance to use:", ["euclidean", "manhattan", "cosine"])
             clusters = run_gmeans(df_X, max_clusters=max_clusters, distance=distance)
-            plot_clusters(clusters)
+            if dataset == "grid":
+                plot_clusters(clusters)
         elif method=="GS Fuzzy Clustering":
             c = get_user_choice("How many centroids would you like to use:", [2,3,4,5,6,7,8,9,10,11,12], is_numeric=True)
             m = get_user_choice("What m (fuzzification parameter) do you want to use:", [1.05, 1.2, 1.5, 1.75, 2], is_numeric=True, is_float=True)
@@ -117,6 +120,10 @@ def main():
             print("---------------------------------------------------------------------------------------")
             if dataset == "grid":
                 plot_clusters(assignments)
+
+        x = get_user_choice("Do you want to exit?",["y","n"])
+        if x == "y":
+            exit()
 
 
 
