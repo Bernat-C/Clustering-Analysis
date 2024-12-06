@@ -13,6 +13,7 @@ path = './output'
 metrics = ["Davies-Bouldin Index", "Silhouette Coefficient", "Calinski"]
 distances = ['euclidean', 'manhattan', 'cosine']
 ms = [1.05, 1.5, 1.75, 2]
+etas = [0.1, 0.5, 0.9]
 colors = ['#FF6347', '#1f77b4', '#2ca02c', "#FFF200"]
 markers = ['o', 's', ".", '^']
 
@@ -67,7 +68,7 @@ def plot_3x3_fuzzy(model, datasets, metrics):
     fig, axes = plt.subplots(4, 3, figsize=(12, 8), sharex=True)
 
     for col_idx, dataset in enumerate(datasets):  # Change row_idx to col_idx for datasets
-        dataset_results = preprocess_results(f'{path}/{model}_{dataset}.csv')
+        dataset_results = preprocess_results(f'{path}/{model}_{dataset}.csv',"kmeans")
 
         for row_idx, metric in enumerate(metrics):  # Change col_idx to row_idx for metrics
             ax = axes[row_idx, col_idx]  # Adjust the indexing to switch rows and columns
@@ -118,6 +119,66 @@ def plot_3x3_fuzzy(model, datasets, metrics):
             # Show legend only on the first row and last column
             if row_idx == 0 and col_idx == 2:
                 ax.legend(title="m", fontsize=10)
+
+    # Adjust layout to prevent overlap
+    plt.tight_layout()
+    plt.show()
+
+def plot_3x3_fuzzy2(model, datasets, metrics):
+    fig, axes = plt.subplots(4, 3, figsize=(12, 8), sharex=True)
+
+    for col_idx, dataset in enumerate(datasets):  # Change row_idx to col_idx for datasets
+        dataset_results = preprocess_results(f'{path}/{model}_{dataset}.csv',"kmeans")
+
+        for row_idx, metric in enumerate(metrics):  # Change col_idx to row_idx for metrics
+            ax = axes[row_idx, col_idx]  # Adjust the indexing to switch rows and columns
+            for eta, color, marker in zip(etas, colors, markers):
+                dataset_results[['Model', 'k', 'm', 'eta']] = dataset_results['Method'].str.split('_', expand=True)
+
+                # Further process to clean up the extracted columns
+                dataset_results['k'] = dataset_results['k'].str.extract('(\d+)', expand=False).astype(int)  # Extract just the number for k
+                dataset_results['m'] = dataset_results['m'].str.extract('(\d+\.\d+|\d+)', expand=False).astype(float)  # Extract number for m
+                dataset_results['eta'] = dataset_results['eta'].str.extract('(\d+\.\d+|\d+)', expand=False).astype(float)  # Extract number for eta
+                subset = dataset_results[dataset_results['eta'] == eta]
+
+                subset = subset.copy()  # Create a full copy to ensure safe modifications
+
+                subset['mean_rank'] = subset[metrics].apply(
+                    lambda row: row.rank(ascending=False).mean()
+                    if row.name != "Davies-Bouldin Index" and row.name != "Xie-Beni"
+                    else row.rank().mean(), axis=1
+                )
+                # For each k, find the row with the highest mean rank
+                subset = subset.loc[subset.groupby('m')['mean_rank'].idxmax()]
+
+                ax.scatter(subset['m'], subset[metric], color=color, marker=marker, label=eta, alpha=0.7)
+                ax.plot(subset['m'], subset[metric], color=color, alpha=0.7)
+
+            # Format the axis values to one decimal place for Davies-Bouldin and Silhouette Coefficient
+            if metric in ["Davies-Bouldin Index", "Silhouette Coefficient","Xie-Beni"]:
+                ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: f"{y:.1f}"))  # One decimal for y-axis
+
+            # No decimals for cluster numbers (k) on the x-axis
+            ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f"{x:.2f}"))
+
+            # Display all k values on x-axis
+            ax.set_xticks(sorted(subset['m'].unique()))  # Show all k values
+            ax.tick_params(axis='x', labelsize=10)  # Set x-axis label size smaller
+
+            # Add grid
+            ax.grid(axis="y", linestyle="--", alpha=0.5)
+
+            # Set titles, axis names, and labels
+            if row_idx == 0:
+                ax.set_title(f"{dataset}", fontsize=14)  # Dataset name in the first row
+            if col_idx == 0:
+                ax.set_ylabel(f"{metric}", fontsize=12)  # Metric name for the Y-axis
+            if row_idx == 2:
+                ax.set_xlabel("m (Fuzzy Parameter)", fontsize=12)  # X-axis label for the last row
+
+            # Show legend only on the first row and last column
+            if row_idx == 0 and col_idx == 2:
+                ax.legend(title="eta", fontsize=10)
 
     # Adjust layout to prevent overlap
     plt.tight_layout()
