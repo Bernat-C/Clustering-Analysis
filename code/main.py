@@ -50,13 +50,14 @@ def main():
         if method=="OPTICS":
             algorithm = get_user_choice("Select algorithm:", ["ball_tree", "brute"])
             metric = get_user_choice("Select the distance to use:", ["euclidean", "manhattan", "hamming"])
+            min_samples = get_user_choice("Select the minimum number of samples:", [5, 15], is_numeric=True)
             start_time = time.time()
-            clusters = apply_optics(df_X, metric=metric, algorithm=algorithm)
+            clusters = apply_optics(df_X, metric=metric, algorithm=algorithm, min_samples=min_samples)
             end_time = time.time()
             elapsed_time = end_time - start_time
 
             k = len(np.unique(clusters))
-            methodused = f"optics_k_{k}_distance_{metric}_algorithm_{algorithm}"
+            methodused = f"optics_k_{k}_distance_{metric}_min_samples{min_samples}_algorithm_{algorithm}"
             metrics = get_metrics_optics(df_X, df_y, clusters, methodused, elapsed_time, False)
 
             print("---------------------------------------------------------------------------------------")
