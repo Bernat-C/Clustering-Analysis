@@ -7,7 +7,7 @@ os.environ["OMP_NUM_THREADS"] = "4"
 
 import pandas as pd
 
-from metrics import get_metrics_general, get_metrics_fuzzy, xie_beni
+from metrics import get_metrics_general, get_metrics_fuzzy, xie_beni, get_metrics_optics
 from optics import apply_optics
 from preprocessing import preprocess_vowel, preprocess_sick, preprocess_grid
 from utils import get_user_choice, plot_clusters, plot_spectral
@@ -50,8 +50,23 @@ def main():
         if method=="OPTICS":
             algorithm = get_user_choice("Select algorithm:", ["ball_tree", "brute"])
             metric = get_user_choice("Select the distance to use:", ["euclidean", "manhattan", "hamming"])
+            start_time = time.time()
             clusters = apply_optics(df_X, metric=metric, algorithm=algorithm)
-            plot_clusters(clusters)
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+
+            k = len(np.unique(clusters))
+            methodused = f"optics_k_{k}_distance_{metric}_algorithm_{algorithm}"
+            metrics = get_metrics_optics(df_X, df_y, clusters, methodused, elapsed_time, False)
+
+            print("---------------------------------------------------------------------------------------")
+            print("Metrics Summary: ")
+            for key, value in metrics.items():
+                print(f"{key}: {value}")
+            print("---------------------------------------------------------------------------------------")
+
+            if dataset == "grid":
+                plot_spectral(df_X, clusters)
 
         elif method=="Spectral Clustering":
             n_clusters = get_user_choice("Select the number of clusters:", [2,3,4,5,6,7,8,9,10,11,12], is_numeric=True)

@@ -19,7 +19,7 @@ colors = ['#FF6347', '#1f77b4', '#2ca02c', "#FFF200"]
 markers = ['o', 's', ".", '^']
 
 # Function to preprocess results
-def preprocess_results(filepath, model):
+def preprocess_results(filepath, model=None):
     results = pd.read_csv(filepath)
     if model == 'kmeans' or model == 'gmeans':
         results['k'] = results['Method'].str.split('_').str[1].str.split('k').str[1].astype(int)
@@ -78,7 +78,7 @@ def plot_kmeans(datasets, model):
 
 # Function to plot a grid (3x3) for GMeans
 def plot_3x3_fuzzy(model, datasets, metrics):
-    fig, axes = plt.subplots(4, 3, figsize=(12, 8), sharex=True)
+    fig, axes = plt.subplots(4, 3, figsize=(16, 12), sharex=True)
 
     for col_idx, dataset in enumerate(datasets):  # Change row_idx to col_idx for datasets
         dataset_results = preprocess_results(f'{path}/{model}_{dataset}.csv',"kmeans")
@@ -108,11 +108,13 @@ def plot_3x3_fuzzy(model, datasets, metrics):
                 ax.plot(subset['k'], subset[metric], color=color, alpha=0.7)
 
             # Format the axis values to one decimal place for Davies-Bouldin and Silhouette Coefficient
-            if metric in ["Davies-Bouldin Index", "Silhouette Coefficient","Xie-Beni"]:
+            if metric in ["Davies-Bouldin Index", "Silhouette Coefficient"]:
                 ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: f"{y:.1f}"))  # One decimal for y-axis
 
-            # No decimals for cluster numbers (k) on the x-axis
-            ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f"{int(x)}"))
+            if metric in ['Xie-Beni'] and dataset == 'vowel':
+                # No decimals for cluster numbers (k) on the x-axis
+                ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: f"{y/1e10:.1f}e10"))  # Scale by 1e4 and add e4
+
 
             # Display all k values on x-axis
             ax.set_xticks(sorted(subset['k'].unique()))  # Show all k values
@@ -120,13 +122,17 @@ def plot_3x3_fuzzy(model, datasets, metrics):
 
             # Add grid
             ax.grid(axis="y", linestyle="--", alpha=0.5)
+            ax.grid(axis="x", linestyle="--", alpha=0.5)
 
             # Set titles, axis names, and labels
             if row_idx == 0:
-                ax.set_title(f"{dataset}", fontsize=14)  # Dataset name in the first row
+                ax.set_title(f"Dataset {dataset}", fontsize=14)  # Dataset name in the first row
             if col_idx == 0:
-                ax.set_ylabel(f"{metric}", fontsize=12)  # Metric name for the Y-axis
-            if row_idx == 2:
+                if metric == 'Davies-Bouldin Index':
+                    ax.set_ylabel(f"DBI", fontsize=12)  # Metric name for the Y-axis
+                else:
+                    ax.set_ylabel(f"{metric}", fontsize=12)  # Metric name for the Y-axis
+            if row_idx == 3:
                 ax.set_xlabel("k (Number of Clusters)", fontsize=12)  # X-axis label for the last row
 
             # Show legend only on the first row and last column
@@ -236,7 +242,10 @@ def plot_3x3_spectral(model, datasets, metrics):
             if row_idx == 0:
                 ax.set_title(f"Dataset {dataset}", fontsize=14)  # Dataset name in the first row
             if col_idx == 0:
-                ax.set_ylabel(f"{metric}", fontsize=12)  # Metric name for the Y-axis
+                if metric == 'Davies-Bouldin Index':
+                    ax.set_ylabel(f"DBI", fontsize=12)  # Metric name for the Y-axis
+                else:
+                    ax.set_ylabel(f"{metric}", fontsize=12)  # Metric name for the Y-axis
             if row_idx == 2:
                 ax.set_xlabel("k (Number of Clusters)", fontsize=12)  # X-axis label for the last row
 
@@ -288,7 +297,10 @@ def plot_3x3_kmeans(model, datasets, metrics):
             if row_idx == 0:
                 ax.set_title(f"Dataset {dataset}", fontsize=14)  # Dataset name in the first row
             if col_idx == 0:
-                ax.set_ylabel(f"{metric}", fontsize=12)  # Metric name for the Y-axis
+                if metric == 'Davies-Bouldin Index':
+                    ax.set_ylabel(f"DBI", fontsize=12)  # Metric name for the Y-axis
+                else:
+                    ax.set_ylabel(f"{metric}", fontsize=12)  # Metric name for the Y-axis
             if row_idx == 2:
                 ax.set_xlabel("k (Number of Clusters)", fontsize=12)  # X-axis label for the last row
 
@@ -300,7 +312,7 @@ def plot_3x3_kmeans(model, datasets, metrics):
     plt.tight_layout()
     plt.show()
 
-models = ['GlobalFastKmeans', 'spectral', 'gmeans', 'spectral']
+models = ['fuzzyclustering','GlobalFastKmeans', 'kmeans', 'gmeans', 'spectral']
 
 def plot_all():
     # Main execution loop
@@ -314,5 +326,7 @@ def plot_all():
             plot_3x3_kmeans(model, datasets, metrics)
         elif model == 'spectral':
             plot_3x3_spectral(model, datasets, metrics)
+        elif model == 'fuzzyclustering':
+            plot_3x3_fuzzy(model, datasets, ["Davies-Bouldin Index", "Silhouette Coefficient", "Calinski", "Xie-Beni"])
 
 plot_all()
