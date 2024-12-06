@@ -1,7 +1,6 @@
 import numpy as np
-from scipy.stats import normaltest
 from kmeans import CustomKMeans
-from utils import compute_final_clusters
+from utils import compute_final_clusters, plot_clusters
 from sklearn.decomposition import PCA
 import pandas as pd
 from metrics import get_metrics_general
@@ -36,6 +35,9 @@ class GMeans:
             split = False
 
             for j, centroid in enumerate(self.centroids):
+                if len(self.centroids[j:])+len(new_centroids)>=self.max_clusters:
+                    new_centroids.extend(self.centroids[j:])
+                    break
                 if len(new_centroids) +1 >= self.max_clusters:
                     new_centroids.append(centroid)
                     break
@@ -71,8 +73,7 @@ class GMeans:
                     # Accept H0: Keep the original center
                     new_centroids.append(centroid)
 
-            if not split:
-                break
+
 
             self.centroids = np.array(new_centroids)
 

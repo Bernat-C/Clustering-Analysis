@@ -48,8 +48,8 @@ def main():
         df_X, df_y = load_ds(dataset)
 
         if method=="OPTICS":
-            algorithm = get_user_choice("Select algorithm:", ["ball_tree", "kd_tree"], is_numeric=True)
-            metric = get_user_choice("Select the distance to use:", ["euclidean", "manhattan", "minkowski"])
+            algorithm = get_user_choice("Select algorithm:", ["ball_tree", "brute"])
+            metric = get_user_choice("Select the distance to use:", ["euclidean", "manhattan", "hamming"])
             clusters = apply_optics(df_X, metric=metric, algorithm=algorithm)
             plot_clusters(clusters)
 

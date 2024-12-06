@@ -125,6 +125,7 @@ def run_all_global_kmeans(data_X, data_y):
     data_X = np.array(data_X)
     data_y = np.array(data_y)
     for k in range(2, 13):
+        print(k)
         for dist in ['euclidean', 'manhattan', 'cosine']:
             start = time.time()
             kmeans = FastGlobalKMeans(max_clusters=k,distance=dist)

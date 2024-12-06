@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def apply_optics(data, metric, algorithm, xi=0.05, min_samples=5):  # Changed data_file to data
+def apply_optics(data, metric, algorithm, xi=0.05, min_samples=15):  # Changed data_file to data
     """
     Applies OPTICS clustering to the provided data.
 

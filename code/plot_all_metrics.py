@@ -14,26 +14,38 @@ metrics = ["Davies-Bouldin Index", "Silhouette Coefficient", "Calinski"]
 distances = ['euclidean', 'manhattan', 'cosine']
 ms = [1.05, 1.5, 1.75, 2]
 etas = [0.1, 0.5, 0.9]
+affinity = ['rbf', 'nearest-neighbors']
 colors = ['#FF6347', '#1f77b4', '#2ca02c', "#FFF200"]
 markers = ['o', 's', ".", '^']
 
 # Function to preprocess results
-def preprocess_results(filepath, method):
+def preprocess_results(filepath, model):
     results = pd.read_csv(filepath)
-    if method == 'kmeans':
+    if model == 'kmeans' or model == 'gmeans':
         results['k'] = results['Method'].str.split('_').str[1].str.split('k').str[1].astype(int)
         results['distance'] = results['Method'].str.split('_').str[2].str.split('distance-').str[1]
-    elif method == 'spectral':
-        print(9)
+    elif model == 'spectral':
+        results['k'] = results['Method'].str.split('_').str[1].str.split('k').str[1].astype(int)
+        results['affinity'] = results['Method'].str.split('_').str[2].str.split('affinity').str[1]
+        results['n_neighbors'] = results['Method'].str.split('_').str[3].str.split('n-neighbors').str[1].astype(int)
+        results['assign_labels'] = results['Method'].str.split('_').str[4].str.split('assign-labels').str[1]
+        results['eigen_solver'] = results['Method'].str.split('_').str[5].str.split('eigen-solver').str[1]
+    elif model == 'GlobalFastKmeans':
+        results['k'] = results['Method'].str.split('_').str[1].str.split('k').str[1].astype(int)
+        results['distance'] = results['Method'].str.split('_').str[2].str.split('distance-').str[1]
+        results['kfound'] = results['Method'].str.split('_').str[2].str.split('kfound-').str[1]
+
+
+
     return results
 
 # Function to plot a single row (1x3) for KMeans
-def plot_kmeans(datasets, method):
+def plot_kmeans(datasets, model):
     fig, axes = plt.subplots(1, 3, figsize=(9, 3), sharey=True)  # 1x3 plot with shared y-axis
     sns.set(style="whitegrid", palette="muted", font_scale=1.2)
 
     for ax, dataset in zip(axes, datasets):
-        results = preprocess_results(f'./output/kmeans_{dataset}.csv', method)
+        results = preprocess_results(f'./output/kmeans_{dataset}.csv', model)
 
         for distance, color in zip(distances, colors):
             results_dist = results[results['distance'] == distance]
@@ -57,6 +69,7 @@ def plot_kmeans(datasets, method):
 
         # Add grid
         ax.grid(axis="y", linestyle="--", alpha=0.5)
+        ax.grid(axis="x", linestyle="--", alpha=0.5)
 
 
     # Adjust layout to prevent overlap and ensure proper spacing
@@ -185,31 +198,73 @@ def plot_3x3_fuzzy2(model, datasets, metrics):
     plt.show()
 
 # Function to plot a grid (3x3) for GMeans
-def plot_3x3(model, datasets, metrics, method):
+def plot_3x3_spectral(model, datasets, metrics):
+    sns.set(style="whitegrid", palette="muted", font_scale=1.2)
     fig, axes = plt.subplots(3, 3, figsize=(12, 8), sharex=True)
 
     for col_idx, dataset in enumerate(datasets):  # Change row_idx to col_idx for datasets
-        dataset_results = preprocess_results(f'{path}/{model}_{dataset}.csv', method)
+        dataset_results = preprocess_results(f'{path}/{model}_{dataset}.csv', model)
+
+        for row_idx, metric in enumerate(metrics):  # Change col_idx to row_idx for metrics
+            ax = axes[row_idx, col_idx]  # Adjust the indexing to switch rows and columns
+            for aff, color, marker in zip(affinity, colors, markers):
+                subset = dataset_results[dataset_results['affinity'] == aff]
+                ranking = rank_and_sort(subset,metrics=["Davies-Bouldin Index","Calinski","Silhouette Coefficient"],n=3)
+                subset = subset[subset[["affinity", "assign_labels", "n_neighbors", "eigen_solver"]]
+                   .eq(ranking.loc[0, ["affinity", "assign_labels", "n_neighbors", "eigen_solver"]])
+                   .all(axis=1)]
+
+                ax.scatter(subset['k'], subset[metric], color=color, marker=marker, label=aff, alpha=0.7)
+                ax.plot(subset['k'], subset[metric], color=color, alpha=0.7)
+
+            # Format the axis values to one decimal place for Davies-Bouldin and Silhouette Coefficient
+            if metric in ["Davies-Bouldin Index", "Silhouette Coefficient"]:
+                ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: f"{y:.1f}"))  # One decimal for y-axis
+
+            # No decimals for cluster numbers (k) on the x-axis
+            ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f"{int(x)}"))
+
+            # Display all k values on x-axis
+            ax.set_xticks(sorted(subset['k'].unique()))  # Show all k values
+            ax.tick_params(axis='x', labelsize=10)  # Set x-axis label size smaller
+
+            # Add grid
+            ax.grid(axis="y", linestyle="--", alpha=0.5)
+            ax.grid(axis="x", linestyle="--", alpha=0.5)
+
+            # Set titles, axis names, and labels
+            if row_idx == 0:
+                ax.set_title(f"Dataset {dataset}", fontsize=14)  # Dataset name in the first row
+            if col_idx == 0:
+                ax.set_ylabel(f"{metric}", fontsize=12)  # Metric name for the Y-axis
+            if row_idx == 2:
+                ax.set_xlabel("k (Number of Clusters)", fontsize=12)  # X-axis label for the last row
+
+            # Show legend only on the first row and last column
+            if row_idx == 0 and col_idx == 2:
+                ax.legend(title="Affinity", fontsize=10)
+
+    # Adjust layout to prevent overlap
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_3x3_kmeans(model, datasets, metrics):
+    sns.set(style="whitegrid", palette="muted", font_scale=1.2)
+
+    fig, axes = plt.subplots(3, 3, figsize=(12, 8), sharex=True)
+
+    for col_idx, dataset in enumerate(datasets):  # Change row_idx to col_idx for datasets
+        dataset_results = preprocess_results(f'{path}/{model}_{dataset}.csv', model)
 
         for row_idx, metric in enumerate(metrics):  # Change col_idx to row_idx for metrics
             ax = axes[row_idx, col_idx]  # Adjust the indexing to switch rows and columns
             for distance, color, marker in zip(distances, colors, markers):
-                if method == 'kmeans':
-                    subset = dataset_results[dataset_results['distance'] == distance]
-
-                    # Calculate mean rank
-                    subset['mean_rank'] = subset[metrics].apply(
-                        lambda row: row.rank(ascending=False).mean() if row.name != "Davies-Bouldin Index" else row.rank().mean(), axis=1
-                    )
-                    # For each k, find the row with the highest mean rank
-                    subset = subset.loc[subset.groupby('k')['mean_rank'].idxmax()]
-
-                elif method == 'spectral':
-                    dataset_results_ranked = rank_and_sort(dataset_results, ["Davies-Bouldin Index", "Silhouette Coefficient"])
-
-                    subset = dataset_results_ranked[dataset_results_ranked[["affinity", "assign_labels", "n_neighbors", "eigen_solver"]]
-                   .eq(dataset_results_ranked.loc[0, ["affinity", "assign_labels", "n_neighbors", "eigen_solver"]])
-                   .all(axis=1)]
+                result = dataset_results[dataset_results['distance'] == distance]
+                subset = pd.DataFrame()
+                for k in result['k'].unique():
+                    sub = rank_and_sort(result[result['k']==k],metrics=["Davies-Bouldin Index","Calinski","Silhouette Coefficient"],n=3)
+                    subset = pd.concat((subset, sub.head(1)))
 
                 ax.scatter(subset['k'], subset[metric], color=color, marker=marker, label=distance, alpha=0.7)
                 ax.plot(subset['k'], subset[metric], color=color, alpha=0.7)
@@ -227,6 +282,7 @@ def plot_3x3(model, datasets, metrics, method):
 
             # Add grid
             ax.grid(axis="y", linestyle="--", alpha=0.5)
+            ax.grid(axis="x", linestyle="--", alpha=0.5)
 
             # Set titles, axis names, and labels
             if row_idx == 0:
@@ -244,18 +300,19 @@ def plot_3x3(model, datasets, metrics, method):
     plt.tight_layout()
     plt.show()
 
+models = ['GlobalFastKmeans', 'spectral', 'gmeans', 'spectral']
 
 def plot_all():
     # Main execution loop
     for model in models:
         if model == 'kmeans':
             plot_kmeans(datasets, 'kmeans')
-            plot_3x3(model, datasets, metrics, 'kmeans')
+            plot_3x3_kmeans(model, datasets, metrics)
         elif model == 'gmeans':
-            plot_3x3(model, datasets, metrics, 'kmeans')
-        elif model == 'global_fastkmeans':
-            plot_3x3(model, datasets, metrics, 'kmeans')
+            plot_3x3_kmeans(model, datasets, metrics)
+        elif model == 'GlobalFastKmeans':
+            plot_3x3_kmeans(model, datasets, metrics)
         elif model == 'spectral':
-            plot_3x3(model, datasets, metrics, 'spectral')
+            plot_3x3_spectral(model, datasets, metrics)
 
 plot_all()
