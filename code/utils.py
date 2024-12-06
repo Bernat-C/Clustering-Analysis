@@ -274,7 +274,7 @@ def rank_and_sort(df,metrics=["Davies-Bouldin Index","Calinski","Silhouette Coef
 
     # Rank the rows based on all metrics
     for metric in metrics:
-        if metric == "Davies-Bouldin Index":
+        if metric in ["Davies-Bouldin Index", "Xie-Beni", "Solving Time"]:
             # Rank ascending for Davies-Bouldin Index
             rankings[f"{metric}_Rank"] = rankings[metric].rank(ascending=True)
         elif metric == "Xie-Beni":
