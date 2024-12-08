@@ -118,7 +118,7 @@ def run_global_kmeans(data, max_clusters, distance='euclidean'):
     labels = kmeans.predict(data)
     centers = kmeans.centroids
     clusters = compute_final_clusters(data, labels, centers)
-    return clusters
+    return clusters, labels
 
 def run_all_global_kmeans(data_X, data_y):
     results = []

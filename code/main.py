@@ -96,19 +96,47 @@ def main():
         elif method=="K-Means":
             n_clusters = get_user_choice("Select the number of clusters:", [2,3,4,5,6,7,8,9,10,11,12], is_numeric=True)
             distance = get_user_choice("Select the distance to use:", ["euclidean", "manhattan", "cosine"])
-            clusters = run_kmeans(df_X, n_clusters=n_clusters, init=None, distance=distance)
+            start_time = time.time()
+            clusters, labels = run_kmeans(df_X, n_clusters=n_clusters, init=None, distance=distance)
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+            metrics = get_metrics_general(df_X, df_y, labels, f"kmeans_k{n_clusters}_distance-{distance}", elapsed_time)
+            print("---------------------------------------------------------------------------------------")
+            print("Metrics Summary: ")
+            for key, value in metrics.items():
+                print(f"{key}: {value}")
+            print("---------------------------------------------------------------------------------------")
+
             if dataset == "grid":
                 plot_clusters(clusters)
         elif method=="Global-K-Means":
             max_clusters = get_user_choice("Select the maximum number of clusters:", [2,3,4,5,6,7,8,9,10,11,12], is_numeric=True)
             distance = get_user_choice("Select the distance to use:", ["euclidean", "manhattan", "cosine"])
-            clusters = run_global_kmeans(df_X, max_clusters=max_clusters, distance=distance)
+            start_time = time.time()
+            clusters, labels = run_global_kmeans(df_X, max_clusters=max_clusters, distance=distance)
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+            metrics = get_metrics_general(df_X, df_y, labels, f"GlobalKmeans_k{max_clusters}_distance-{distance}", elapsed_time)
+            print("---------------------------------------------------------------------------------------")
+            print("Metrics Summary: ")
+            for key, value in metrics.items():
+                print(f"{key}: {value}")
+            print("---------------------------------------------------------------------------------------")
             if dataset == "grid":
                 plot_clusters(clusters)
         elif method=="G-Means":
             max_clusters = get_user_choice("Select the maximum number of clusters:", [2,3,4,5,6,7,8,9,10,11,12], is_numeric=True)
             distance = get_user_choice("Select the distance to use:", ["euclidean", "manhattan", "cosine"])
-            clusters = run_gmeans(df_X, max_clusters=max_clusters, distance=distance)
+            start_time = time.time()
+            clusters, labels = run_gmeans(df_X, max_clusters=max_clusters, distance=distance)
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+            metrics = get_metrics_general(df_X, df_y, labels, f"gmeans_k{max_clusters}_distance-{distance}", elapsed_time)
+            print("---------------------------------------------------------------------------------------")
+            print("Metrics Summary: ")
+            for key, value in metrics.items():
+                print(f"{key}: {value}")
+            print("---------------------------------------------------------------------------------------")
             if dataset == "grid":
                 plot_clusters(clusters)
         elif method=="GS Fuzzy Clustering":

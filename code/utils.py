@@ -149,9 +149,6 @@ def plot_clusters(clusters):
         points = np.array(cluster_data['points'])
         center = cluster_data['center']
 
-        # Debugging: Print the shape of points to check if it's 2D
-        print(f"Cluster {cluster_id} - Points shape: {points.shape}")
-
         plt.scatter(points[:, 0], points[:, 1], label=f'Cluster {cluster_id} Points', alpha=0.6, s=30)
 
         # Plot the center with a different marker (e.g., red 'X')

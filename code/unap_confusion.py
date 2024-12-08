@@ -3,11 +3,9 @@ import pandas as pd
 import numpy as np
 import os
 
-from kmeans import run_kmeans
 from optics import apply_optics
 from fuzzyclustering import gs_fcm, defuzzyfy, get_cluster_list
 from spectralclustering import spectral_clustering
-from gmeans import run_gmeans
 from utils import reduce_and_plot_with_umap, reduce_and_plot_with_pca, plot_confusion, plot_clusters
 
 
