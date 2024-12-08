@@ -74,7 +74,7 @@ def main():
             affinity = get_user_choice("Select the affinity type:", ["rbf", "nearest_neighbors"])
             n_neighbors = None
             if affinity == "nearest_neighbors":
-                n_neighbors = get_user_choice("Select the number of neighbors:", [5, 10, 15, 20], is_numeric=True)
+                n_neighbors = get_user_choice("Select the number of neighbors:", [25,50,100,150,200], is_numeric=True)
             assign_labels = get_user_choice("Select the label assignment method:", ["kmeans", "discretize"])
             eigen_solver = get_user_choice("Select the eigen solver method:", ['arpack', 'lobpcg'])
 
