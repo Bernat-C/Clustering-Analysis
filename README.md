@@ -15,11 +15,11 @@ cd <root_folder_of_project>/
 ```
 2. Create virtual env
 ```bash
-python3 -m venv venv/
+conda create --name venv python=3.9
 ```
 3. Open virtual env
 ```bash
-source venv/bin/activate
+conda activate venv
 ```
 4. Install required dependencies
 ```bash
@@ -33,7 +33,7 @@ pip list
 
 Execute main.py by running:
 ```bash
- python3 main.py
+ python code/main.py
  ```
 
 Then a menu will be displayed with the instructions to execute any combination of hyperparameters. Follow the instructions
