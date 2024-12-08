@@ -213,15 +213,25 @@ def plot_3x3_spectral(model, datasets, metrics):
 
         for row_idx, metric in enumerate(metrics):  # Change col_idx to row_idx for metrics
             ax = axes[row_idx, col_idx]  # Adjust the indexing to switch rows and columns
-            for aff, color, marker in zip(affinity, colors, markers):
+            for aff in affinity:
                 subset = dataset_results[dataset_results['affinity'] == aff]
-                ranking = rank_and_sort(subset,metrics=["Davies-Bouldin Index","Calinski","Silhouette Coefficient"],n=3)
-                subset = subset[subset[["affinity", "assign_labels", "n_neighbors", "eigen_solver"]]
-                   .eq(ranking.loc[0, ["affinity", "assign_labels", "n_neighbors", "eigen_solver"]])
-                   .all(axis=1)]
+                if aff == 'nearest-neighbors':
+                    for n_value, color, marker in zip([25, 50, 100, 200], colors, markers):
+                        subset2 = subset[subset['n_neighbors'] == n_value]
+                        ranking = rank_and_sort(subset2,metrics=["Davies-Bouldin Index","Calinski","Silhouette Coefficient"],n=3)
+                        subset2 = subset2[subset2[["affinity", "assign_labels", "n_neighbors", "eigen_solver"]]
+                        .eq(ranking.loc[0, ["affinity", "assign_labels", "n_neighbors", "eigen_solver"]])
+                        .all(axis=1)]
+                        ax.scatter(subset2['k'], subset2[metric], color=color, marker=marker, label=f'nn {n_value}', alpha=0.7)
+                        ax.plot(subset2['k'], subset2[metric], color=color, alpha=0.7)
+                else:
+                    ranking = rank_and_sort(subset,metrics=["Davies-Bouldin Index","Calinski","Silhouette Coefficient"],n=3)
+                    subset = subset[subset[["affinity", "assign_labels", "n_neighbors", "eigen_solver"]]
+                    .eq(ranking.loc[0, ["affinity", "assign_labels", "n_neighbors", "eigen_solver"]])
+                    .all(axis=1)]
 
-                ax.scatter(subset['k'], subset[metric], color=color, marker=marker, label=aff, alpha=0.7)
-                ax.plot(subset['k'], subset[metric], color=color, alpha=0.7)
+                    ax.scatter(subset['k'], subset[metric], color='black', marker='*', label=aff, alpha=0.7)
+                    ax.plot(subset['k'], subset[metric], color='black', alpha=0.7)
 
             # Format the axis values to one decimal place for Davies-Bouldin and Silhouette Coefficient
             if metric in ["Davies-Bouldin Index", "Silhouette Coefficient"]:
@@ -312,7 +322,7 @@ def plot_3x3_kmeans(model, datasets, metrics):
     plt.tight_layout()
     plt.show()
 
-models = ['fuzzyclustering','GlobalFastKmeans', 'kmeans', 'gmeans', 'spectral']
+models = ['spectral', 'fuzzyclustering','GlobalFastKmeans', 'kmeans', 'gmeans', 'spectral']
 
 def plot_all():
     # Main execution loop
