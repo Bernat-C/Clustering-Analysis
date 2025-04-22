@@ -1,0 +1,4 @@
+notebooks/** linguist-detectable=false
+docs/** linguist-detectable=false
+datasets/** linguist-detectable=false
+datasets_processed/** linguist-detectable=false
